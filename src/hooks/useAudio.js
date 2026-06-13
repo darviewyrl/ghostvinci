@@ -1,19 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
 
 // Public royalty-free audio URLs
-const BGM_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3';
+const BGM_URL = '/audio/bgm.mp3';
 const SFX_URLS = {
-  draw: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav',      // paper/card slide
-  flip: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav',      // wooden block click
-  correct: 'https://assets.mixkit.co/active_storage/sfx/911/911-84.wav',    // positive chime
-  wrong: 'https://assets.mixkit.co/active_storage/sfx/2503/2503-84.wav',      // low thud/wood knock
-  victory: 'https://assets.mixkit.co/active_storage/sfx/2018/2018-84.wav'    // brass/fanfare
+  draw: '/audio/draw.mp3',      // paper/card slide
+  flip: '/audio/flip.mp3',      // wooden block click
+  correct: '/audio/correct.wav',    // positive chime
+  wrong: '/audio/wrong.wav',      // low thud/wood knock
+  victory: '/audio/victory.wav',    // brass/fanfare
+  defeat: '/audio/defeat.wav'       // failure signal
 };
 
 export const useAudio = () => {
   const [isMuted, setIsMuted] = useState(() => {
     const saved = localStorage.getItem('davinci_mute');
     return saved ? JSON.parse(saved) : false;
+  });
+
+  const [bgmVolume, setBgmVolumeState] = useState(() => {
+    const saved = localStorage.getItem('davinci_bgm_vol');
+    return saved !== null ? parseFloat(saved) : 0.15;
+  });
+
+  const [sfxVolume, setSfxVolumeState] = useState(() => {
+    const saved = localStorage.getItem('davinci_sfx_vol');
+    return saved !== null ? parseFloat(saved) : 0.5;
   });
 
   const bgmRef = useRef(null);
@@ -24,13 +35,15 @@ export const useAudio = () => {
     // Initialize BGM
     const bgm = new Audio(BGM_URL);
     bgm.loop = true;
-    bgm.volume = 0.08; // quiet background music
+    bgm.volume = bgmVolume;
+    bgm.muted = isMuted;
     bgmRef.current = bgm;
 
     // Preload SFX
     Object.entries(SFX_URLS).forEach(([key, url]) => {
       const sfx = new Audio(url);
-      sfx.volume = key === 'victory' ? 0.25 : 0.4; // set appropriate volumes
+      sfx.volume = sfxVolume;
+      sfx.muted = isMuted;
       sfxRefs.current[key] = sfx;
     });
 
@@ -54,6 +67,23 @@ export const useAudio = () => {
       sfx.muted = isMuted;
     });
   }, [isMuted]);
+
+  // Setters
+  const setBGMVolume = (vol) => {
+    setBgmVolumeState(vol);
+    localStorage.setItem('davinci_bgm_vol', vol.toString());
+    if (bgmRef.current) {
+      bgmRef.current.volume = vol;
+    }
+  };
+
+  const setSFXVolume = (vol) => {
+    setSfxVolumeState(vol);
+    localStorage.setItem('davinci_sfx_vol', vol.toString());
+    Object.values(sfxRefs.current).forEach(sfx => {
+      sfx.volume = vol;
+    });
+  };
 
   const toggleMute = () => {
     setIsMuted(prev => !prev);
@@ -91,6 +121,10 @@ export const useAudio = () => {
     toggleMute,
     playBGM,
     stopBGM,
-    playSFX
+    playSFX,
+    bgmVolume,
+    sfxVolume,
+    setBGMVolume,
+    setSFXVolume,
   };
 };

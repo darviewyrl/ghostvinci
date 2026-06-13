@@ -1,5 +1,5 @@
-import { useReducer, useEffect, useRef } from 'react';
-import { createDeck, shuffle, sortHand, calculateJokerAssignedValue, getAIDecision } from '../utils/gameLogic';
+import { useReducer, useEffect } from 'react';
+import { createDeck, shuffle, sortHand, calculateJokerAssignedValue } from '../utils/gameLogic';
 
 const LOCAL_STORAGE_KEY = 'davinci_game_state_v1';
 
@@ -14,6 +14,7 @@ const INITIAL_STATE = {
   lastGuess: null, // { targetIndex, guess, isCorrect }
   consecutiveCorrectGuesses: 0,
   turnCount: 0,
+  elapsedTime: 0,
   timeLeft: 20, // 20s turn timer
   gameLogs: [],
   scores: { player: 0, ai: 0 },
@@ -54,6 +55,7 @@ function gameReducer(state, action) {
         lastGuess: null,
         consecutiveCorrectGuesses: 0,
         turnCount: 0,
+        elapsedTime: 0,
         timeLeft: 20,
         gameLogs: ['เริ่มเกมใหม่! กำลังแจกการ์ด...'],
         dealingIndex: 0,
@@ -70,14 +72,13 @@ function gameReducer(state, action) {
       const newPlayerHand = [...playerHand];
       const newAiHand = [...aiHand];
 
-      let logMessage = '';
-      if (dealingIndex % 2 === 0) {
-        newPlayerHand.push(card);
-        logMessage = `แจกการ์ดสี${card.color === 'black' ? 'ดำ' : 'ขาว'} ให้ผู้เล่น`;
+      const isDealingToPlayer = dealingIndex % 2 === 0;
+      if (isDealingToPlayer) {
+        newPlayerHand.push({ ...card, _isNew: true });
       } else {
-        newAiHand.push(card);
-        logMessage = `แจกการ์ดสี${card.color === 'black' ? 'ดำ' : 'ขาว'} ให้ AI`;
+        newAiHand.push({ ...card, _isNew: true });
       }
+      const logMessage = `แจกการ์ดสี${card.color === 'black' ? 'ดำ' : 'ขาว'} ให้${isDealingToPlayer ? 'ผู้เล่น' : ' AI'}`;
 
       return {
         ...state,
@@ -90,9 +91,12 @@ function gameReducer(state, action) {
     }
 
     case 'CHECK_JOKERS_POST_DEAL': {
-      // Sort hands
-      const sortedPlayer = sortHand(state.playerHand);
-      const sortedAi = sortHand(state.aiHand);
+      // Sort hands and clear deal animations
+      const playerHandCleared = state.playerHand.map(tile => ({ ...tile, _isNew: false }));
+      const aiHandCleared = state.aiHand.map(tile => ({ ...tile, _isNew: false }));
+
+      const sortedPlayer = sortHand(playerHandCleared);
+      const sortedAi = sortHand(aiHandCleared);
 
       // AI places its Jokers automatically
       const finalAiHand = sortedAi.map(tile => {
@@ -105,14 +109,18 @@ function gameReducer(state, action) {
       });
       const finalSortedAi = sortHand(finalAiHand);
 
+      // Add _justSorted: true flag to hands for sorting animation
+      const sortedPlayerWithFlag = sortedPlayer.map(tile => ({ ...tile, _justSorted: true }));
+      const finalSortedAiWithFlag = finalSortedAi.map(tile => ({ ...tile, _justSorted: true }));
+
       // Check if Player has any Jokers that need manual positioning
       const playerJokersToPlace = sortedPlayer.filter(tile => tile.value === -1 && tile.assignedValue === -1);
 
       if (playerJokersToPlace.length > 0) {
         return {
           ...state,
-          playerHand: sortedPlayer,
-          aiHand: finalSortedAi,
+          playerHand: sortedPlayerWithFlag,
+          aiHand: finalSortedAiWithFlag,
           gamePhase: 'JOKER_SETUP',
           jokerSetupIndex: 0,
           gameLogs: ['กรุณาเลือกตำแหน่งวางการ์ด Joker ของคุณ', ...state.gameLogs],
@@ -122,8 +130,8 @@ function gameReducer(state, action) {
       // If no Jokers to place, proceed directly to turn banner
       return {
         ...state,
-        playerHand: sortedPlayer,
-        aiHand: finalSortedAi,
+        playerHand: sortedPlayerWithFlag,
+        aiHand: finalSortedAiWithFlag,
         gamePhase: 'TURN_BANNER',
         activePlayer: 'player',
         timeLeft: 20,
@@ -131,11 +139,10 @@ function gameReducer(state, action) {
     }
 
     case 'PLACE_JOKER': {
-      const { playerHand, aiHand, activePlayer, gamePhase, jokerSetupIndex, drawnTile } = state;
+      const { playerHand, activePlayer, gamePhase, jokerSetupIndex, drawnTile } = state;
       const { tileId, insertIndex } = action.payload;
 
       let newPlayerHand = [...playerHand];
-      let newAiHand = [...aiHand];
 
       if (activePlayer === 'player' || gamePhase === 'JOKER_SETUP') {
         // Find if the Joker is in the hand, or if it is the drawnTile
@@ -152,7 +159,7 @@ function gameReducer(state, action) {
         const newAssignedValue = calculateJokerAssignedValue(otherCards, insertIndex);
         
         // Update Joker and place back
-        const updatedJoker = { ...jokerTile, assignedValue: newAssignedValue };
+        const updatedJoker = { ...jokerTile, assignedValue: newAssignedValue, _isNew: false, _justInserted: true };
         newPlayerHand = [...otherCards];
         newPlayerHand.splice(insertIndex, 0, updatedJoker);
         newPlayerHand = sortHand(newPlayerHand);
@@ -165,14 +172,14 @@ function gameReducer(state, action) {
           if (remainingJokers.length > 0) {
             return {
               ...state,
-              playerHand: newPlayerHand,
+              playerHand: newPlayerHand.map(tile => ({ ...tile, _justSorted: false })),
               jokerSetupIndex: jokerSetupIndex + 1,
               gameLogs: logs,
             };
           } else {
             return {
               ...state,
-              playerHand: newPlayerHand,
+              playerHand: newPlayerHand.map(tile => ({ ...tile, _justSorted: false })),
               gamePhase: 'TURN_BANNER',
               activePlayer: 'player',
               timeLeft: 20,
@@ -183,7 +190,7 @@ function gameReducer(state, action) {
           // This was placing a drawn Joker
           return {
             ...state,
-            playerHand: newPlayerHand,
+            playerHand: newPlayerHand.map(tile => ({ ...tile, _justSorted: false })),
             drawnTile: null,
             gamePhase: 'TURN_BANNER',
             activePlayer: activePlayer === 'player' ? 'ai' : 'player',
@@ -198,15 +205,22 @@ function gameReducer(state, action) {
 
     case 'TRANSITION_TO_DRAW': {
       const { deck, activePlayer } = state;
+      // Clear insertion and sort animation flags
+      const playerHandCleared = state.playerHand.map(tile => ({ ...tile, _justInserted: false, _justSorted: false, _justGuessedCorrectly: false }));
+      const aiHandCleared = state.aiHand.map(tile => ({ ...tile, _justInserted: false, _justSorted: false, _justGuessedCorrectly: false }));
+
       if (deck.length === 0) {
         // Deck empty: skip to guess phase
         return {
           ...state,
+          playerHand: playerHandCleared,
+          aiHand: aiHandCleared,
           gamePhase: 'GUESS',
           drawnTile: null,
           timeLeft: 20,
           lastGuess: null,
           gameLogs: [`กองจั่วหมดแล้ว! ข้ามการจั่ว ไปยังขั้นตอนทายการ์ดทันที`, ...state.gameLogs],
+          turnCount: state.turnCount + 1,
         };
       }
 
@@ -219,63 +233,64 @@ function gameReducer(state, action) {
 
       return {
         ...state,
+        playerHand: playerHandCleared,
+        aiHand: aiHandCleared,
         deck: newDeck,
-        drawnTile: drawn,
+        drawnTile: { ...drawn, _isNew: true },
         gamePhase: 'GUESS',
         timeLeft: 20,
         lastGuess: null,
         gameLogs: logs,
+        turnCount: state.turnCount + 1,
       };
     }
 
     case 'CONTINUE_GUESSING':
       return {
         ...state,
+        playerHand: state.playerHand.map(tile => ({ ...tile, _justInserted: false })),
+        aiHand: state.aiHand.map(tile => ({ ...tile, _justInserted: false })),
         gamePhase: 'GUESS',
         timeLeft: 20,
+        lastGuess: null,
       };
 
     case 'GUESS_TILE': {
-      const { targetIndex, guessedValue } = action.payload;
+      const { targetIndex, guessedValue, guessedColor } = action.payload;
       const { playerHand, aiHand, activePlayer, drawnTile, consecutiveCorrectGuesses, timeLeft } = state;
       
       const targetHand = activePlayer === 'player' ? aiHand : playerHand;
       const targetTile = targetHand[targetIndex];
       const actualValue = targetTile.value === -1 ? 'Joker' : targetTile.value;
       
-      const isCorrect = guessedValue === actualValue;
-      let newPlayerHand = [...playerHand];
-      let newAiHand = [...aiHand];
-      let newDrawnTile = drawnTile ? { ...drawnTile } : null;
+      // Guess requires matching both the value AND the color
+      const isCorrect = guessedValue === actualValue && guessedColor === targetTile.color;
+      let newPlayerHand = playerHand.map(tile => ({ ...tile, _justGuessedCorrectly: false }));
+      let newAiHand = aiHand.map(tile => ({ ...tile, _justGuessedCorrectly: false }));
       let scoreChange = 0;
-      let comboBonus = 0;
 
       const logs = [];
 
       if (isCorrect) {
         // Correct Guess: Flip target card
         if (activePlayer === 'player') {
-          newAiHand[targetIndex] = { ...targetTile, isRevealed: true };
+          newAiHand[targetIndex] = { ...targetTile, isRevealed: true, _justGuessedCorrectly: true };
           
-          // Calculate score: base points + speed bonus + combo bonus
-          // Base score 10
-          // Speed bonus: up to 10 points (timeLeft / 2)
-          // Combo bonus: 5 points * consecutiveCorrectGuesses
           const base = 10;
           const speedVal = Math.max(0, Math.floor(timeLeft / 2));
-          comboBonus = 5 * consecutiveCorrectGuesses;
+          const comboBonus = 5 * consecutiveCorrectGuesses;
           scoreChange = base + speedVal + comboBonus;
           
-          logs.push(`คุณทายถูก! การ์ดที่ตำแหน่ง ${targetIndex + 1} ของ AI คือ ${actualValue === 'Joker' ? '★' : actualValue} (+${scoreChange} คะแนน)`);
+          logs.push(`คุณทายถูก! การ์ดที่ตำแหน่ง ${targetIndex + 1} ของ AI คือ สี${targetTile.color === 'black' ? 'ดำ' : 'ขาว'} ค่า ${actualValue === 'Joker' ? '★' : actualValue} (+${scoreChange} คะแนน)`);
         } else {
-          newPlayerHand[targetIndex] = { ...targetTile, isRevealed: true };
-          logs.push(`AI ทายถูก! การ์ดที่ตำแหน่ง ${targetIndex + 1} ของคุณคือ ${actualValue === 'Joker' ? '★' : actualValue}`);
+          newPlayerHand[targetIndex] = { ...targetTile, isRevealed: true, _justGuessedCorrectly: true };
+          logs.push(`AI ทายถูก! การ์ดที่ตำแหน่ง ${targetIndex + 1} ของคุณคือ สี${targetTile.color === 'black' ? 'ดำ' : 'ขาว'} ค่า ${actualValue === 'Joker' ? '★' : actualValue}`);
         }
 
         const newScores = {
           ...state.scores,
           player: activePlayer === 'player' ? state.scores.player + scoreChange : state.scores.player,
-          ai: activePlayer === 'ai' ? state.scores.ai + 10 : state.scores.ai, // simple AI score increment
+          ai: activePlayer === 'ai' ? state.scores.ai + 10 : state.scores.ai,
         };
 
         // Check for Win condition
@@ -283,8 +298,7 @@ function gameReducer(state, action) {
         const allRevealed = opponentHand.every(tile => tile.isRevealed);
 
         if (allRevealed) {
-          // Active player wins!
-          const winBonus = 30; // win bonus points
+          const winBonus = 30;
           const finalScores = {
             ...newScores,
             player: activePlayer === 'player' ? newScores.player + winBonus : newScores.player,
@@ -314,14 +328,14 @@ function gameReducer(state, action) {
       } else {
         // Wrong Guess:
         if (activePlayer === 'player') {
-          logs.push(`คุณทายผิด! การ์ดตำแหน่งที่ ${targetIndex + 1} ของ AI ไม่ใช่ ${guessedValue === 'Joker' ? '★' : guessedValue}`);
+          logs.push(`คุณทายผิด! การ์ดตำแหน่งที่ ${targetIndex + 1} ของ AI ไม่ใช่ สี${guessedColor === 'black' ? 'ดำ' : 'ขาว'} ค่า ${guessedValue === 'Joker' ? '★' : guessedValue}`);
         } else {
-          logs.push(`AI ทายผิด! การ์ดตำแหน่งที่ ${targetIndex + 1} ของคุณไม่ใช่ ${guessedValue === 'Joker' ? '★' : guessedValue}`);
+          logs.push(`AI ทายผิด! การ์ดตำแหน่งที่ ${targetIndex + 1} ของคุณไม่ใช่ สี${guessedColor === 'black' ? 'ดำ' : 'ขาว'} ค่า ${guessedValue === 'Joker' ? '★' : guessedValue}`);
         }
 
         if (drawnTile) {
           // Reveal the drawn tile to everyone
-          const revealedDrawn = { ...drawnTile, isRevealed: true };
+          const revealedDrawn = { ...drawnTile, isRevealed: true, _isNew: false, _justInserted: true };
           logs.push(`${activePlayer === 'player' ? 'คุณ' : 'AI'} ต้องเปิดเผยการ์ดที่จั่วได้: ${revealedDrawn.value === -1 ? '★ (Joker)' : revealedDrawn.value}`);
           
           if (revealedDrawn.value === -1) {
@@ -412,7 +426,7 @@ function gameReducer(state, action) {
 
     case 'PENALTY_SELECT_PLAYER_CARD': {
       const { cardIndex } = action.payload;
-      const { playerHand, aiHand, activePlayer } = state;
+      const { playerHand } = state;
       let newPlayerHand = [...playerHand];
       const logs = [...state.gameLogs];
 
@@ -449,7 +463,7 @@ function gameReducer(state, action) {
 
       if (drawnTile) {
         // Keep card hidden (face-down) and insert into hand
-        const hiddenDrawn = { ...drawnTile, isRevealed: false };
+        const hiddenDrawn = { ...drawnTile, isRevealed: false, _isNew: false, _justInserted: true };
         
         if (activePlayer === 'player') {
           if (hiddenDrawn.value === -1) {
@@ -558,7 +572,7 @@ function gameReducer(state, action) {
       const insertIndex = Math.floor(Math.random() * (newAiHand.length + 1));
       const newAssignedValue = calculateJokerAssignedValue(newAiHand, insertIndex);
 
-      const placedJoker = { ...drawnTile, assignedValue: newAssignedValue };
+      const placedJoker = { ...drawnTile, assignedValue: newAssignedValue, _isNew: false, _justInserted: true };
       newAiHand.splice(insertIndex, 0, placedJoker);
       newAiHand = sortHand(newAiHand);
 
@@ -592,6 +606,14 @@ function gameReducer(state, action) {
         drawnTile: null,
         lastGuess: null,
       };
+
+    case 'TICK_ELAPSED': {
+      if (state.gamePhase === 'LOBBY' || state.gamePhase === 'GAME_OVER') return state;
+      return {
+        ...state,
+        elapsedTime: (state.elapsedTime || 0) + 1,
+      };
+    }
 
     default:
       return state;
