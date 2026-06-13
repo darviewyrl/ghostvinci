@@ -1,0 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-felt-light: #16432f;
+  --color-felt-dark: #0a1f15;
+  --color-gold-light: #f5e4a3;
+  --color-gold: #d4af37;
+  --color-gold-dark: #b89324;
+  --color-charcoal: #151518;
+  --color-charcoal-dark: #08080a;
+  --color-ivory: #f7f5ee;
+  --color-ivory-dark: #dfdad0;
+  --font-thai: 'Kanit', 'Noto Sans Thai', sans-serif;
+}
+
+/* Base body style for classic felt table look */
+body {
+  margin: 0;
+  font-family: 'Kanit', 'Noto Sans Thai', sans-serif;
+  background-color: #0a1f15;
+  color: #f7f5ee;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+/* Custom background felt style with realistic gradient */
+.bg-radial-table {
+  background: radial-gradient(circle, #1a4f37 0%, #0a2016 100%);
+}
+
+/* Realistic mahogany wood panel background */
+.wood-panel {
+  background: linear-gradient(135deg, #422213 0%, #2e160a 100%);
+  border: 3px solid #b89324;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1), 0 8px 16px rgba(0, 0, 0, 0.6);
+}
+
+/* 3D Perspective Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Fanned card layouts - smooth hover scale */
+.fan-card-transition {
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease, border-color 0.2s ease;
+}
+
+/* Custom scrollbar for clean vintage log panel */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(10, 31, 21, 0.5);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.3);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.6);
+}
+
+/* Premium active border animation */
+.active-border-pulse {
+  border-color: #d4af37;
+  animation: border-thick-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes border-thick-pulse {
+  0%, 100% {
+    border-color: rgba(212, 175, 55, 0.5);
+    box-shadow: 0 0 0 0px rgba(212, 175, 55, 0.2);
+  }
+  50% {
+    border-color: rgba(212, 175, 55, 1);
+    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+  }
+}
+
+/* Slide up animation for Turn Banner overlay */
+@keyframes slideDownUp {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  15%, 85% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+.animate-turn-banner {
+  animation: slideDownUp 1.5s forwards cubic-bezier(0.25, 1, 0.5, 1);
+}
