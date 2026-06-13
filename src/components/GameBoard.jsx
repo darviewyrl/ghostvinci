@@ -1,6 +1,93 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, HelpCircle, CheckCircle, XCircle, ChevronRight, CornerDownRight } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, CornerDownRight } from 'lucide-react';
 
+/* ─────────────────────────────────────────────────────────────
+   Reusable Card component
+   ───────────────────────────────────────────────────────────── */
+function Card({
+  tile,
+  size = 'md',  // 'sm' | 'md' | 'lg'
+  style,
+  className = '',
+  onClick,
+  isSelected,
+  isGuessable,
+  isPenalty,
+  showBack = false,
+  animate,
+}) {
+  const isBlack = tile.color === 'black';
+  const val = tile.value === -1 ? '★' : tile.value;
+
+  // Size tokens
+  const sizes = {
+    sm: { card: 'w-10 h-16',    center: 'text-xl',    corner: 'text-[8px]' },
+    md: { card: 'w-14 h-22',    center: 'text-3xl',   corner: 'text-[10px]' },
+    lg: { card: 'w-16 h-26',    center: 'text-4xl',   corner: 'text-[11px]' },
+  };
+  const sz = sizes[size] || sizes.md;
+
+  const colorClass   = isBlack ? 'card-black' : 'card-white';
+  const revealedClass = tile.isRevealed && !showBack ? 'card-revealed' : '';
+  const selectedClass = isSelected ? 'card-selected' : '';
+  const guessClass    = isGuessable && !tile.isRevealed ? 'card-guessable' : '';
+  const penaltyClass  = isPenalty && !tile.isRevealed ? 'card-penalty' : '';
+  const animClass     = animate === 'glow' ? 'animate-ambient-glow' : animate === 'deal' ? 'animate-deal-in' : '';
+
+  return (
+    <div
+      onClick={onClick}
+      style={style}
+      className={`card-base ${colorClass} ${revealedClass} ${selectedClass} ${guessClass} ${penaltyClass} ${animClass} ${sz.card} ${className}`}
+    >
+      {/* Card back pattern */}
+      {(showBack || (!tile.isRevealed && !showBack && tile.assignedValue === undefined && tile.value === undefined)) ? (
+        /* shouldn't hit this branch – handled below */
+        null
+      ) : null}
+
+      {/* Revealed face or back */}
+      {showBack ? (
+        /* Back of card (hidden) */
+        <div className={`card-back-inner ${isBlack ? 'card-back-inner-black' : 'card-back-inner-white'}`}>
+          <div className={`w-5/6 h-5/6 rounded flex items-center justify-center border ${isBlack ? 'border-gold/25 border-dashed' : 'border-charcoal/20 border-dashed'}`}>
+            <span className="text-[8px] font-bold tracking-widest opacity-70">DC</span>
+          </div>
+        </div>
+      ) : tile.isRevealed ? (
+        /* Revealed — dimmed, no overlay text */
+        <>
+          <span className={`${sz.corner} font-bold leading-none self-start`}>{val}</span>
+          <div className={`flex-1 flex items-center justify-center font-extrabold leading-none ${sz.center}`}>
+            {val}
+          </div>
+          <div className="flex justify-between items-end">
+            <span className={`${sz.corner} font-bold leading-none rotate-180 inline-block`}>{val}</span>
+            <Eye className="w-3 h-3 opacity-50" strokeWidth={2} />
+          </div>
+        </>
+      ) : (
+        /* Hidden (face-down pattern) */
+        <div className={`card-back-inner ${isBlack ? 'card-back-inner-black' : 'card-back-inner-white'}`}>
+          <div className={`w-5/6 h-5/6 rounded flex items-center justify-center border ${isBlack ? 'border-gold/25 border-dashed' : 'border-charcoal/20 border-dashed'}`}>
+            <span className="text-[8px] font-bold tracking-widest opacity-70">DC</span>
+          </div>
+        </div>
+      )}
+
+      {/* Selected indicator pip */}
+      {isSelected && (
+        <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-gold border-2 border-charcoal flex items-center justify-center z-20">
+          <span className="text-[9px] font-black text-charcoal leading-none">?</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Main GameBoard
+   ───────────────────────────────────────────────────────────── */
 export default function GameBoard({
   playerHand,
   aiHand,
@@ -24,9 +111,7 @@ export default function GameBoard({
   useEffect(() => {
     if (lastGuess) {
       setShowFeedback(true);
-      const timer = setTimeout(() => {
-        setShowFeedback(false);
-      }, 1400); // show for 1.4 seconds
+      const timer = setTimeout(() => setShowFeedback(false), 1400);
       return () => clearTimeout(timer);
     }
   }, [lastGuess]);
@@ -42,245 +127,181 @@ export default function GameBoard({
     setSelectedAICardIdx(null);
   };
 
-  // Determine if inline Joker placement is active for Player
-  // This occurs during initial JOKER_SETUP, or JOKER_PLACEMENT phase for a drawn Joker
-  const jokerToPlace = playerHand.find(tile => tile.value === -1 && tile.assignedValue === -1);
-  const isInlineJokerPlacementActive = (gamePhase === 'JOKER_SETUP' && jokerToPlace) ||
+  // Inline Joker placement state
+  const jokerToPlace = playerHand.find(t => t.value === -1 && t.assignedValue === -1);
+  const isInlineJokerPlacementActive =
+    (gamePhase === 'JOKER_SETUP' && jokerToPlace) ||
     (gamePhase === 'JOKER_PLACEMENT' && isPlayerTurn && drawnTile && drawnTile.value === -1);
-
   const activeJokerTile = jokerToPlace || (isInlineJokerPlacementActive ? drawnTile : null);
-
-  // Clean hand excluding the Joker currently being placed
-  const cleanPlayerHand = activeJokerTile 
+  const cleanPlayerHand = activeJokerTile
     ? playerHand.filter(t => t.id !== activeJokerTile.id)
     : playerHand;
 
-  // Scale cards down dynamically if player has a large hand
+  // Dynamic card sizing based on hand size
   const handSize = playerHand.length;
-  let cardSizeClass = 'w-14 h-22 md:w-20 md:h-30 text-base';
-  if (handSize > 8) {
-    cardSizeClass = 'w-9 h-14 md:w-12 md:h-18 text-xs';
-  } else if (handSize > 6) {
-    cardSizeClass = 'w-11 h-17 md:w-15 md:h-22 text-sm';
-  }
+  const cardSize = handSize > 8 ? 'sm' : handSize > 6 ? 'sm' : 'md';
+
+  // Fan formula — clean, subtle arc
+  const fanAngle = (idx, total) => total > 1 ? (idx - (total - 1) / 2) * (14 / Math.max(total, 5)) : 0;
+  const fanY     = (idx, total) => total > 1 ? Math.abs(idx - (total - 1) / 2) * 3 : 0;
 
   return (
-    <div className="flex-1 flex flex-col justify-between py-4 relative w-full select-none font-thai overflow-hidden">
-      
-      {/* Dynamic Exaggerated Snap Feedback Banners */}
+    <div className="flex-1 flex flex-col justify-between relative w-full select-none font-thai overflow-hidden">
+
+      {/* ══════════════════════════════════════════════════════════
+          FEEDBACK BANNER (floats above everything)
+          ══════════════════════════════════════════════════════ */}
       {showFeedback && lastGuess && (
-        <div className="absolute inset-x-0 top-1/3 z-40 flex justify-center items-center pointer-events-none animate-pulse">
-          {lastGuess.isCorrect ? (
-            <div className="bg-emerald-950/95 border-2 border-emerald-500 rounded-xl px-8 py-4 shadow-2xl flex items-center gap-3">
-              <CheckCircle className="w-8 h-8 text-green-400" />
-              <div className="text-left">
-                <span className="text-lg font-bold text-green-400 block tracking-widest uppercase">ทายถูกต้อง!</span>
-                <span className="text-[10px] font-bold text-ivory/60">ระบุการ์ดคู่แข่งสำเร็จ</span>
-              </div>
+        <div className="absolute inset-x-0 top-1/4 z-50 flex justify-center pointer-events-none">
+          <div className={`animate-feedback-pop flex items-center gap-3 px-7 py-4 rounded-2xl shadow-2xl border-2 ${
+            lastGuess.isCorrect
+              ? 'bg-[#0d2b1a] border-emerald-600/60'
+              : 'bg-[#2b0d0d] border-red-600/60'
+          }`}>
+            {lastGuess.isCorrect
+              ? <CheckCircle className="w-7 h-7 text-emerald-400" strokeWidth={2} />
+              : <XCircle     className="w-7 h-7 text-red-400"     strokeWidth={2} />
+            }
+            <div className="text-left">
+              <span className={`text-base font-bold block tracking-wide ${lastGuess.isCorrect ? 'text-emerald-300' : 'text-red-300'}`}>
+                {lastGuess.isCorrect ? 'ทายถูกต้อง!' : 'ทายผิดพลาด!'}
+              </span>
+              <span className="text-[10px] font-semibold text-ivory/50 block mt-0.5">
+                {lastGuess.isCorrect ? 'ระบุการ์ดคู่แข่งสำเร็จ' : 'เปิดเผยการ์ดในมือของคุณ 1 ใบ'}
+              </span>
             </div>
-          ) : (
-            <div className="bg-red-950/95 border-2 border-red-500 rounded-xl px-8 py-4 shadow-2xl flex items-center gap-3">
-              <XCircle className="w-8 h-8 text-red-400" />
-              <div className="text-left">
-                <span className="text-lg font-bold text-red-400 block tracking-widest uppercase">ทายผิดพลาด!</span>
-                <span className="text-[10px] font-bold text-ivory/60">คุณโดนลงโทษเปิดการ์ด</span>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* 1. AI Opponent Hand Section (Slanted 3D Wall) */}
-      <div className="flex flex-col items-center flex-1 justify-center">
-        <span className="text-[10px] font-bold text-gold/60 uppercase tracking-widest mb-1">
-          กองกำลังการ์ดของ AI (AI's Tiles)
+      {/* ══════════════════════════════════════════════════════════
+          1. AI HAND — 3-D perspective wall
+          ══════════════════════════════════════════════════════ */}
+      <div className="flex flex-col items-center justify-center flex-1">
+        <span className="text-[9px] font-semibold text-gold/45 uppercase tracking-widest mb-2">
+          การ์ดของ AI ({aiHand.length} ใบ)
         </span>
-        <div className="perspective-1000 preserve-3d flex items-center justify-center gap-3 md:gap-4.5 py-4 px-6 min-h-[120px] max-w-full overflow-x-auto custom-scrollbar">
+
+        <div className="flex items-end justify-center gap-3 px-4 py-2 min-h-[130px] flex-wrap">
           {aiHand.map((tile, idx) => {
             const isSelected = selectedAICardIdx === idx;
-            const isBlack = tile.color === 'black';
-            
+            const isGuessable = isPlayerTurn && gamePhase === 'GUESS' && !tile.isRevealed;
             return (
               <div
                 key={tile.id}
                 onClick={() => handleAICardClick(idx)}
-                className={`w-12 h-20 md:w-16 md:h-26 rounded-lg flex flex-col justify-between p-2.5 transition-all duration-300 ease-out relative cursor-pointer preserve-3d shadow-lg ${
-                  tile.isRevealed
-                    ? isBlack
-                      ? 'bg-charcoal/40 border border-gold/15 text-gold/40 shadow-none opacity-60'
-                      : 'bg-ivory-dark/30 border border-charcoal/10 text-charcoal-dark/35 shadow-none opacity-60'
-                    : isSelected
-                    ? 'scale-105 active-border-pulse'
-                    : isPlayerTurn && gamePhase === 'GUESS'
-                    ? isBlack
-                      ? 'bg-charcoal border-t border-l border-gold/20 border-b-4 border-r-2 border-charcoal-dark hover:-translate-y-2 hover:shadow-gold/20'
-                      : 'bg-ivory border-t border-l border-white border-b-4 border-r-2 border-ivory-dark hover:-translate-y-2 hover:shadow-gold/20'
-                    : isBlack
-                    ? 'bg-charcoal border-t border-l border-gold/15 border-b-4 border-r-2 border-charcoal-dark'
-                    : 'bg-ivory border-t border-l border-white border-b-4 border-r-2 border-ivory-dark'
-                }`}
                 style={{
-                  transform: `perspective(800px) rotateY(-18deg) rotateX(15deg) translateZ(0)`,
+                  transform: `perspective(900px) rotateY(-14deg) rotateX(12deg)`,
+                  zIndex: idx,
                 }}
               >
-                {tile.isRevealed ? (
-                  <>
-                    <span className="text-[9px] font-bold self-start leading-none">{tile.value === -1 ? '★' : tile.value}</span>
-                    <div className="flex-1 flex items-center justify-center font-extrabold text-2xl md:text-3xl leading-none">
-                      {tile.value === -1 ? '★' : tile.value}
-                    </div>
-                    <div className="flex justify-between items-center w-full leading-none">
-                      <span className="text-[9px] font-bold rotate-180">{tile.value === -1 ? '★' : tile.value}</span>
-                      <Eye className="w-3.5 h-3.5 opacity-60 text-gold-light" />
-                    </div>
-                  </>
-                ) : (
-                  // Distinct card back geometric patterns for Black vs White cards
-                  <div className="absolute inset-0 rounded-lg flex items-center justify-center p-1.5">
-                    <div 
-                      className={`w-full h-full rounded flex items-center justify-center border ${
-                        isBlack
-                          ? 'border-gold/20 bg-charcoal-dark/50 text-gold/40'
-                          : 'border-charcoal/20 bg-ivory-dark/40 text-charcoal/50'
-                      }`}
-                    >
-                      <div className="w-5/6 h-5/6 border border-current border-dashed opacity-55 rounded flex items-center justify-center">
-                        <span className="text-[9px] font-serif font-extrabold tracking-tighter">DC</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Selected target indicator */}
-                {isSelected && (
-                  <div className="absolute -top-3.5 -right-2 bg-gold text-charcoal-dark w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border border-gold-light shadow">
-                    ?
-                  </div>
-                )}
+                <Card
+                  tile={tile}
+                  size="md"
+                  isSelected={isSelected}
+                  isGuessable={isGuessable}
+                  showBack={!tile.isRevealed}
+                />
               </div>
             );
           })}
 
-          {/* AI Drawn Slot (Face down back style) */}
+          {/* AI drawn tile slot */}
           {drawnTile && activePlayer === 'ai' && (
-            <div className="ml-5 pl-5 border-l border-gold/20 flex flex-col items-center">
-              <span className="text-[8px] font-bold text-gold/60 mb-1.5 uppercase tracking-wider">ใบที่จั่วได้</span>
-              <div
-                className={`w-12 h-20 md:w-16 md:h-26 rounded-lg border-t border-l border-b-4 border-r-2 flex items-center justify-center shadow-xl transition-transform duration-300 relative ${
-                  drawnTile.isRevealed
-                    ? drawnTile.color === 'black'
-                      ? 'bg-charcoal border-gold/30 border-charcoal-dark text-gold'
-                      : 'bg-ivory border-white border-ivory-dark text-charcoal-dark'
-                    : drawnTile.color === 'black'
-                    ? 'bg-charcoal border-gold/15 border-charcoal-dark text-gold/35'
-                    : 'bg-ivory border-white border-ivory-dark text-charcoal-dark/35'
-                }`}
-                style={{
-                  transform: `perspective(800px) rotateY(-18deg) rotateX(15deg) translateZ(0)`,
-                }}
-              >
-                {drawnTile.isRevealed ? (
-                  <span className="text-xl md:text-2xl font-extrabold">{drawnTile.value === -1 ? '★' : drawnTile.value}</span>
-                ) : (
-                  <div className="absolute inset-0 rounded-lg flex items-center justify-center p-1.5">
-                    <div 
-                      className={`w-full h-full rounded flex items-center justify-center border ${
-                        drawnTile.color === 'black'
-                          ? 'border-gold/20 bg-charcoal-dark/50 text-gold/40'
-                          : 'border-charcoal/20 bg-ivory-dark/40 text-charcoal/50'
-                      }`}
-                    >
-                      <div className="w-5/6 h-5/6 border border-current border-dashed opacity-55 rounded flex items-center justify-center">
-                        <span className="text-[9px] font-serif font-extrabold tracking-tighter">DC</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+            <div className="ml-4 pl-4 border-l border-gold/15 flex flex-col items-center gap-1.5">
+              <span className="text-[8px] font-semibold text-gold/50 uppercase tracking-widest">จั่วได้</span>
+              <div style={{ transform: `perspective(900px) rotateY(-14deg) rotateX(12deg)` }}>
+                <Card tile={drawnTile} size="md" showBack={!drawnTile.isRevealed} />
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* 2. Middle Arena Controls (Deck pile status & Guess inputs) */}
-      <div className="my-3 flex flex-col items-center justify-center gap-3">
+      {/* ══════════════════════════════════════════════════════════
+          2. MIDDLE CONTROLS — Deck + Action buttons
+          ══════════════════════════════════════════════════════ */}
+      <div className="flex items-center justify-center gap-4 my-3">
         {selectedAICardIdx === null ? (
-          <div className="flex items-center gap-6 bg-charcoal/95 border border-gold/25 rounded-2xl p-4 md:p-5 shadow-xl shadow-black/40">
-            {/* Draw pile button (Static visual representation only) */}
-            <div className="flex flex-col items-center gap-1.5">
-              <div
-                className={`w-12 h-18 md:w-14 md:h-20 border-t border-l border-b-4 border-r-2 rounded-xl flex items-center justify-center relative shadow-md bg-felt-light border-felt-dark opacity-85`}
-              >
-                <div className="w-5/6 h-5/6 border border-dashed border-gold/30 rounded-lg flex flex-col items-center justify-center p-1 text-gold/80">
-                  <span className="text-[8px] font-bold font-mono tracking-tighter">DECK</span>
-                  <span className="text-xs font-extrabold mt-0.5">{deckCount}</span>
+          <div className="flex items-center gap-5 bg-charcoal-dark/80 border border-gold/18 rounded-2xl px-5 py-3.5 shadow-xl shadow-black/50">
+
+            {/* Deck Pile */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-11 h-17 rounded-xl bg-felt-dark border border-felt-light/40 border-b-[3px] border-r-[2px] flex items-center justify-center shadow-md">
+                <div className="text-center">
+                  <span className="text-[8px] font-bold text-gold/60 uppercase tracking-tight block">DECK</span>
+                  <span className="text-sm font-bold text-gold leading-none">{deckCount}</span>
                 </div>
               </div>
-              <span className="text-[8px] font-bold text-gold/45 uppercase tracking-widest">กองการ์ด</span>
+              <span className="text-[7px] font-semibold text-gold/35 uppercase tracking-widest">กอง</span>
             </div>
 
-            {/* Turn status/instructions */}
-            <div className="flex flex-col justify-center min-w-[170px] text-center px-2">
+            {/* Turn actions */}
+            <div className="flex flex-col items-center gap-2 min-w-[180px]">
               {isPlayerTurn && gamePhase === 'DECIDE' && (
-                <div className="flex flex-col sm:flex-row gap-2.5 justify-center items-center">
+                <div className="flex gap-2">
                   <button
                     onClick={onContinue}
-                    className="py-2.5 px-4 bg-gold hover:bg-gold-dark text-charcoal-dark font-extrabold text-[10px] rounded-lg border border-gold-light transition-all duration-300 shadow-md cursor-pointer uppercase tracking-widest hover:-translate-y-0.5 active:translate-y-0"
+                    className="py-2.5 px-5 bg-gold hover:bg-gold-dark text-charcoal-dark font-bold text-[10px] rounded-xl border border-gold-light/60 transition-all duration-200 shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer uppercase tracking-widest"
                   >
-                    ทายต่อ (Continue)
+                    ทายต่อ
                   </button>
                   <button
                     onClick={onPass}
-                    className="py-2.5 px-4 bg-charcoal hover:bg-charcoal-dark text-gold border border-gold/30 hover:border-gold font-bold text-[10px] rounded-lg transition-all duration-300 shadow-md cursor-pointer uppercase tracking-widest hover:-translate-y-0.5 active:translate-y-0"
+                    className="py-2.5 px-5 bg-charcoal text-gold border border-gold/25 hover:border-gold font-semibold text-[10px] rounded-xl transition-all duration-200 shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer uppercase tracking-widest"
                   >
-                    ผ่าน (Pass Turn)
+                    ผ่านเทิร์น
                   </button>
                 </div>
               )}
 
               {isPlayerTurn && gamePhase === 'GUESS' && (
-                <p className="text-xs text-gold font-bold animate-pulse tracking-wide leading-relaxed">
-                  เลือกการ์ด AI ด้านบนที่ต้องการเดารหัส
+                <p className="text-[10px] font-semibold text-gold/80 tracking-wide text-center leading-snug animate-pulse">
+                  แตะการ์ด AI ด้านบนเพื่อเลือก
                 </p>
               )}
 
               {!isPlayerTurn && (
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="w-4 h-4 rounded-full border-2 border-gold border-t-transparent animate-spin" />
-                  <span className="text-[9px] font-bold text-gold-light/50 uppercase tracking-widest">ตาของ AI กำลังวิเคราะห์...</span>
+                  <div className="w-5 h-5 rounded-full border-2 border-t-transparent spinner-gold animate-spin" />
+                  <span className="text-[9px] font-semibold text-ivory/40 uppercase tracking-widest">AI กำลังวิเคราะห์...</span>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          /* High-Contrast Numeric Guess Modal */
-          <div className="bg-charcoal border-2 border-gold rounded-xl p-5 max-w-sm w-full mx-4 shadow-2xl shadow-black/95 text-center z-15">
-            <h3 className="text-xs font-bold text-gold uppercase tracking-widest mb-3">
-              ทายรหัสการ์ดใบที่ {selectedAICardIdx + 1} ของ AI
+          /* ── Guess Input Panel ── */
+          <div className="bg-charcoal border-2 border-gold/40 rounded-2xl p-5 max-w-sm w-full shadow-2xl shadow-black/90 text-center">
+            <p className="text-[10px] font-semibold text-gold/60 uppercase tracking-widest mb-1 leading-none">
+              ทายการ์ดใบที่ {selectedAICardIdx + 1}
+            </p>
+            <h3 className="text-sm font-bold text-ivory mb-4 leading-snug">
+              เลือกค่าตัวเลขที่คาดว่าจะถูกต้อง
             </h3>
-            
-            <div className="grid grid-cols-4 gap-2 mb-3.5">
+
+            {/* Number grid */}
+            <div className="grid grid-cols-4 gap-2 mb-4">
               {Array.from({ length: 12 }).map((_, val) => (
                 <button
                   key={val}
                   onClick={() => handleGuessSubmit(val)}
-                  className="py-2 bg-charcoal-dark hover:bg-gold hover:text-charcoal-dark hover:border-gold font-extrabold text-xs text-gold border border-gold/25 rounded-lg transition-all duration-150 cursor-pointer uppercase tracking-wider"
+                  className="py-2.5 font-bold text-sm text-gold bg-charcoal-dark hover:bg-gold hover:text-charcoal-dark border border-gold/20 hover:border-gold rounded-xl transition-all duration-150 cursor-pointer active:scale-95 tabular-nums"
                 >
                   {val}
                 </button>
               ))}
             </div>
 
-            <div className="flex gap-2.5">
+            <div className="flex gap-2">
               <button
                 onClick={() => handleGuessSubmit('Joker')}
-                className="flex-1 py-2.5 bg-gold text-charcoal-dark font-extrabold text-xs rounded-lg border border-gold-light hover:bg-gold-dark transition-all duration-200 cursor-pointer uppercase tracking-widest"
+                className="flex-1 py-2.5 bg-gold text-charcoal-dark font-bold text-xs rounded-xl border border-gold-light/60 hover:bg-gold-dark transition-all duration-200 cursor-pointer uppercase tracking-widest"
               >
-                ทายว่าเป็น Joker (★)
+                Joker ★
               </button>
               <button
                 onClick={() => setSelectedAICardIdx(null)}
-                className="py-2.5 px-4 bg-charcoal text-ivory/60 border border-gold/30 hover:border-gold font-bold text-xs rounded-lg transition-all duration-200 cursor-pointer"
+                className="py-2.5 px-4 bg-transparent text-ivory/50 border border-gold/20 hover:border-gold/50 hover:text-ivory font-semibold text-xs rounded-xl transition-all duration-200 cursor-pointer"
               >
                 ยกเลิก
               </button>
@@ -289,93 +310,75 @@ export default function GameBoard({
         )}
       </div>
 
-      {/* 3. Player Hand Section (Curve Fan layout / Inline Joker Placement) */}
-      <div className="flex flex-col items-center justify-end mt-4">
-        {/* Inline Joker placement indicator */}
+      {/* ══════════════════════════════════════════════════════════
+          3. PLAYER HAND — fanned arc with inline Joker slots
+          ══════════════════════════════════════════════════════ */}
+      <div className="flex flex-col items-center">
+
+        {/* Joker placement hint banner */}
         {isInlineJokerPlacementActive && activeJokerTile && (
-          <div className="mb-3 flex items-center gap-2 bg-gold/15 border border-gold/30 rounded-xl px-4 py-2 text-xs font-bold text-gold tracking-wide animate-pulse">
-            <CornerDownRight className="w-4 h-4 text-gold" />
-            <span>จัดทัพ Joker: โปรดเลือกแตะปุ่ม "+" ในมือด้านล่างเพื่อแทรกการ์ดใบนี้</span>
-            
-            {/* Miniature of placing card */}
-            <div className={`w-6 h-9 rounded ml-2 border flex items-center justify-center text-[10px] ${
-              activeJokerTile.color === 'black'
-                ? 'bg-charcoal border-gold/50 text-gold'
-                : 'bg-ivory border-charcoal/30 text-charcoal-dark'
-            }`}>
-              ★
-            </div>
+          <div className="mb-2.5 flex items-center gap-2 bg-gold/10 border border-gold/25 rounded-xl px-4 py-2 text-xs font-semibold text-gold/90 tracking-wide">
+            <CornerDownRight className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
+            <span>แตะ <strong>+</strong> ในมือด้านล่างเพื่อแทรก Joker</span>
+            {/* Mini Joker preview */}
+            <div className={`w-5 h-8 rounded border ml-1 flex items-center justify-center text-[10px] font-bold shrink-0 ${
+              activeJokerTile.color === 'black' ? 'bg-charcoal border-gold/40 text-gold' : 'bg-ivory border-charcoal/25 text-charcoal-dark'
+            }`}>★</div>
           </div>
         )}
 
-        <div className="relative flex items-center justify-center py-4 px-6 min-h-[140px] w-full max-w-4xl">
-          {/* Fanned Hand Row */}
-          <div className="flex flex-wrap items-center justify-center gap-3.5 py-3 px-2">
-            
-            {/* If Joker placement is active, we render a slot selector before index 0 */}
+        {/* Hand fan row */}
+        <div
+          className="relative flex items-end justify-center py-4 px-6 min-h-[150px] w-full max-w-5xl"
+          style={{ perspective: '900px' }}
+        >
+          <div className="flex items-end justify-center" style={{ gap: isInlineJokerPlacementActive ? '4px' : '10px' }}>
+
+            {/* Slot before index 0 */}
             {isInlineJokerPlacementActive && activeJokerTile && (
               <button
                 onClick={() => onJokerPlace(activeJokerTile.id, 0)}
-                className="w-10 h-16 md:w-12 md:h-22 border-2 border-dashed border-gold hover:border-gold-light hover:bg-gold/15 rounded-lg flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm hover:scale-105 active:scale-95 z-30"
-                title="แทรกตรงนี้ (ช่องที่ 1)"
+                className="joker-slot w-8 h-[88px] shrink-0"
+                title="แทรกตรงนี้"
               >
-                <span className="text-gold font-extrabold text-base">+</span>
+                <span className="text-gold font-bold text-lg leading-none">+</span>
               </button>
             )}
 
             {cleanPlayerHand.map((tile, idx) => {
               const N = cleanPlayerHand.length;
-              // Subtle elegant fanning curve formula (does not mess up numbers)
-              const rot = N > 1 ? (idx - (N - 1) / 2) * (18 / N) : 0;
-              const yTrans = N > 1 ? Math.abs(idx - (N - 1) / 2) * 3.5 : 0;
-              const isBlack = tile.color === 'black';
-
+              const rot = fanAngle(idx, N);
+              const yOff = fanY(idx, N);
               const isPenaltyPhase = gamePhase === 'PENALTY_REVEAL';
-              const canClickForPenalty = isPenaltyPhase && !tile.isRevealed;
+              const canClick = isPenaltyPhase && !tile.isRevealed;
 
               return (
                 <React.Fragment key={tile.id}>
                   <div
-                    onClick={() => canClickForPenalty && onPenaltySelect(idx)}
-                    className={`${cardSizeClass} rounded-xl flex flex-col justify-between border-t border-l border-b-4 border-r-2 transition-all duration-300 ease-out relative shadow-md ${
-                      tile.isRevealed
-                        ? isBlack
-                          ? 'bg-charcoal/40 border border-gold/15 text-gold/40 shadow-none opacity-60'
-                          : 'bg-ivory-dark/30 border border-charcoal/10 text-charcoal-dark/35 shadow-none opacity-60'
-                        : isBlack
-                        ? 'bg-charcoal border-gold/30 border-charcoal-dark text-gold shadow-black/85'
-                        : 'bg-ivory border-white border-ivory-dark text-charcoal-dark shadow-black/40'
-                    } ${
-                      canClickForPenalty 
-                        ? 'border-red-500 cursor-pointer hover:-translate-y-3 hover:scale-105 active-border-pulse shadow-red-500/35' 
-                        : 'hover:-translate-y-2 hover:shadow-lg hover:shadow-black/50'
-                    }`}
+                    onClick={() => canClick && onPenaltySelect(idx)}
                     style={{
-                      transform: `rotate(${rot}deg) translateY(${yTrans}px)`,
-                      zIndex: idx + 10,
+                      transform: `rotate(${rot}deg) translateY(${yOff}px)`,
+                      zIndex: idx + 5,
+                      transformOrigin: 'bottom center',
                     }}
                   >
-                    <span className="text-[10px] font-bold self-start leading-none">{tile.value === -1 ? '★' : tile.value}</span>
-                    <div className="flex-1 flex items-center justify-center font-extrabold text-2xl md:text-3xl leading-none">
-                      {tile.value === -1 ? '★' : tile.value}
-                    </div>
-                    
-                    <div className="flex justify-between items-center w-full leading-none">
-                      <span className="text-[10px] font-bold rotate-180">{tile.value === -1 ? '★' : tile.value}</span>
-                      {tile.isRevealed && (
-                        <Eye className="w-3.5 h-3.5 text-red-500 opacity-80 animate-pulse" title="AI เห็นการ์ดใบนี้แล้ว" />
-                      )}
-                    </div>
+                    <Card
+                      tile={tile}
+                      size={cardSize}
+                      isPenalty={canClick}
+                      animate={tile._isNew ? 'deal' : undefined}
+                    />
                   </div>
 
-                  {/* Render inline placement slots between cards */}
+                  {/* Slot after each card (joker placement) */}
                   {isInlineJokerPlacementActive && activeJokerTile && (
                     <button
                       onClick={() => onJokerPlace(activeJokerTile.id, idx + 1)}
-                      className="w-10 h-16 md:w-12 md:h-22 border-2 border-dashed border-gold hover:border-gold-light hover:bg-gold/15 rounded-lg flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm hover:scale-105 active:scale-95 z-30"
-                      title={`แทรกตรงนี้ (ช่องที่ ${idx + 2})`}
+                      className="joker-slot w-8 h-[88px] shrink-0"
+                      title={`แทรกตรงนี้ (ช่อง ${idx + 2})`}
+                      style={{ zIndex: idx + 30 }}
                     >
-                      <span className="text-gold font-extrabold text-base">+</span>
+                      <span className="text-gold font-bold text-lg leading-none">+</span>
                     </button>
                   )}
                 </React.Fragment>
@@ -383,35 +386,28 @@ export default function GameBoard({
             })}
           </div>
 
-          {/* Player Drawn card slot (Pulsing shadow, no bounce) */}
+          {/* Player drawn card — ambient glow, no bounce */}
           {drawnTile && activePlayer === 'player' && !isInlineJokerPlacementActive && (
-            <div className="absolute right-2 md:right-6 bottom-4 flex flex-col items-center pl-4 border-l border-gold/15 z-35 bg-felt-dark/30 p-2.5 rounded-xl">
-              <span className="text-[8px] font-bold text-gold/80 mb-1.5 uppercase tracking-widest">การ์ดที่จั่วได้</span>
-              <div
-                className={`w-14 h-22 md:w-20 md:h-30 rounded-xl flex flex-col justify-between p-2.5 border-t border-l border-b-4 border-r-2 shadow-2xl relative animate-pulse ${
-                  drawnTile.color === 'black'
-                    ? 'bg-charcoal border-gold/35 border-charcoal-dark text-gold shadow-gold/10'
-                    : 'bg-ivory border-white border-ivory-dark text-charcoal-dark shadow-gold/10'
-                }`}
-              >
-                <span className="text-[10px] font-bold self-start leading-none">{drawnTile.value === -1 ? '★' : drawnTile.value}</span>
-                <div className="flex-1 flex items-center justify-center font-extrabold text-2xl md:text-3xl leading-none">
-                  {drawnTile.value === -1 ? '★' : drawnTile.value}
-                </div>
-                <span className="text-[10px] font-bold self-end rotate-180 leading-none">{drawnTile.value === -1 ? '★' : drawnTile.value}</span>
+            <div className="absolute right-3 bottom-3 flex flex-col items-center gap-1.5 z-40">
+              <span className="text-[8px] font-semibold text-gold/60 uppercase tracking-widest">จั่วได้</span>
+              <div className="animate-ambient-glow rounded-[10px]">
+                <Card
+                  tile={drawnTile}
+                  size="md"
+                  showBack={false}
+                />
               </div>
             </div>
           )}
         </div>
-        
-        <span className="text-[10px] font-bold text-gold/50 uppercase tracking-widest mt-2">
-          {gamePhase === 'PENALTY_REVEAL' 
-            ? 'บทลงโทษ! โปรดเลือกการ์ดของคุณ 1 ใบเพื่อกดยืนยันเปิดเผยต่อบอท AI' 
-            : 'กองกำลังการ์ดของคุณ'
-          }
+
+        {/* Player label */}
+        <span className={`text-[9px] font-semibold uppercase tracking-widest mt-1 ${
+          gamePhase === 'PENALTY_REVEAL' ? 'text-red-400' : 'text-gold/40'
+        }`}>
+          {gamePhase === 'PENALTY_REVEAL' ? 'เลือก 1 ใบเพื่อเปิดเผย' : `มือของคุณ (${playerHand.length} ใบ)`}
         </span>
       </div>
-
     </div>
   );
 }

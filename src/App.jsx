@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import SetupScreen from './components/SetupScreen';
 import GameBoard from './components/GameBoard';
 import GameHUD from './components/GameHUD';
-import { Scroll } from 'lucide-react';
 import { useGameState } from './hooks/useGameState';
 import { useAudio } from './hooks/useAudio';
 import { getAIDecision, calculateCandidatesForHand } from './utils/gameLogic';
@@ -265,10 +264,12 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-radial-table p-4 flex flex-row gap-4 font-thai select-none">
-      {/* Left Column: Stats header & Game Board Arena */}
-      <div className="flex-1 h-full flex flex-col justify-between gap-3 min-w-0">
-        {/* HUD Statistics Header */}
+    <div className="h-screen w-screen overflow-hidden bg-radial-table relative flex flex-row gap-3 p-3 font-thai select-none">
+
+      {/* ── LEFT COLUMN: HUD + Board ── */}
+      <div className="flex-1 h-full flex flex-col gap-2.5 min-w-0">
+
+        {/* HUD Header */}
         <GameHUD
           activePlayer={activePlayer}
           gamePhase={gamePhase}
@@ -283,16 +284,18 @@ export default function App() {
           aiDifficulty={aiDifficulty}
         />
 
-        {/* Dynamic 3D Turn Overlay Banner */}
+        {/* Turn Banner Overlay */}
         {gamePhase === 'TURN_BANNER' && (
-          <div className="fixed top-0 left-0 w-full h-full z-45 flex items-center justify-center pointer-events-none bg-black/10">
-            <div className="bg-charcoal/90 border-y-2 border-gold py-4 px-12 md:py-6 md:px-20 text-center animate-turn-banner shadow-xl pointer-events-auto">
-              <h1 className="text-2xl md:text-4xl font-bold font-serif text-gold tracking-widest uppercase">
-                {activePlayer === 'player' ? 'ตาของคุณ' : 'ตาของ AI'}
-              </h1>
-              <p className="text-xs text-ivory/50 font-bold uppercase tracking-wider mt-1">
-                {activePlayer === 'player' ? 'กรุณาดำเนินการ' : 'กำลังประเมินสถานการณ์...'}
-              </p>
+          <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-auto animate-turn-banner">
+              <div className="bg-charcoal/92 border-y-[3px] border-gold/80 py-5 px-16 text-center shadow-2xl shadow-black/70">
+                <h1 className="text-3xl font-bold text-gold tracking-[0.18em] uppercase leading-none">
+                  {activePlayer === 'player' ? 'ตาของคุณ' : 'ตาของ AI'}
+                </h1>
+                <p className="text-[11px] font-semibold text-ivory/45 uppercase tracking-[0.15em] mt-2 leading-none">
+                  {activePlayer === 'player' ? 'กรุณาดำเนินการ' : 'กำลังประเมินสถานการณ์...'}
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -316,79 +319,83 @@ export default function App() {
         </div>
       </div>
 
-      {/* Right Column: Clean, compact, scrollable Game Log Sidebar */}
-      <div className="w-80 h-full bg-charcoal/95 border-2 border-gold rounded-2xl p-5 shadow-2xl flex flex-col text-left">
-        <div className="flex items-center gap-2 border-b border-gold/25 pb-3 mb-4">
-          <Scroll className="w-4 h-4 text-gold" />
-          <h3 className="text-xs font-bold text-gold uppercase tracking-widest leading-relaxed">
+      {/* ── RIGHT SIDEBAR: Game Log ── */}
+      <div className="w-72 h-full flex flex-col bg-charcoal-dark/90 border border-gold/20 rounded-2xl overflow-hidden shadow-2xl shadow-black/60">
+        {/* Sidebar header */}
+        <div className="px-4 py-3 border-b border-gold/15 flex items-center gap-2 shrink-0">
+          <div className="w-1.5 h-4 bg-gold/70 rounded-full" />
+          <h3 className="text-[10px] font-bold text-gold/70 uppercase tracking-[0.2em] leading-none">
             บันทึกการแข่งขัน
           </h3>
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2.5">
+
+        {/* Log entries */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-3 space-y-1.5">
+          {gameLogs.length === 0 && (
+            <p className="text-[10px] text-ivory/25 text-center py-10 leading-relaxed">
+              ยังไม่มีรายการ
+            </p>
+          )}
           {gameLogs.map((log, index) => {
-            let logTypeClass = 'text-ivory/80';
-            if (log.includes('ทายถูก')) logTypeClass = 'text-emerald-400 font-semibold';
-            else if (log.includes('ทายผิด') || log.includes('บทลงโทษ')) logTypeClass = 'text-red-400 font-semibold';
-            else if (log.includes('ชนะ')) logTypeClass = 'text-gold font-bold';
-            
+            let accent = 'border-gold/8 text-ivory/65';
+            if (log.includes('ทายถูก'))  accent = 'border-emerald-600/30 text-emerald-300/90 font-semibold';
+            else if (log.includes('ทายผิด') || log.includes('บทลงโทษ')) accent = 'border-red-600/30 text-red-300/90 font-semibold';
+            else if (log.includes('ชนะ')) accent = 'border-gold/40 text-gold font-bold';
+
             return (
-              <div 
-                key={index} 
-                className={`text-[11px] leading-relaxed py-2 px-3 rounded bg-felt-dark/40 border border-gold/10 ${logTypeClass}`}
+              <div
+                key={index}
+                className={`text-[10px] leading-relaxed py-1.5 px-2.5 rounded-lg bg-felt-dark/30 border ${accent}`}
               >
                 {log}
               </div>
             );
           })}
-          {gameLogs.length === 0 && (
-            <div className="text-[11px] text-ivory/40 text-center py-8">
-              ยังไม่มีประวัติการแข่งขันในรอบนี้
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Post-Game Over Modal overlay */}
+      {/* ── GAME OVER MODAL ── */}
       {gamePhase === 'GAME_OVER' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 font-thai">
-          <div className="bg-charcoal border-2 border-gold rounded-2xl p-8 max-w-md w-full text-center relative overflow-hidden shadow-2xl shadow-black/95">
-            <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-gold rounded-tl-xl pointer-events-none" />
-            <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-gold rounded-tr-xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-gold rounded-bl-xl pointer-events-none" />
-            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-gold rounded-br-xl pointer-events-none" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[3px] p-4 font-thai">
+          <div className="bg-charcoal border border-gold/50 rounded-2xl p-8 max-w-sm w-full text-center relative shadow-2xl shadow-black/90 overflow-hidden">
+            {/* Corner accents */}
+            <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-gold/70 rounded-tl-xl" />
+            <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-gold/70 rounded-tr-xl" />
+            <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-gold/70 rounded-bl-xl" />
+            <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-gold/70 rounded-br-xl" />
 
-            <h2 className="text-2xl md:text-3xl font-bold font-serif text-gold tracking-widest uppercase mb-1 leading-normal">
-              ผลการแข่งขัน!
+            <p className="text-[9px] font-bold text-gold/45 uppercase tracking-[0.25em] mb-2">Davinci Code</p>
+            <h2 className="text-2xl font-bold text-gold tracking-wider uppercase mb-1 leading-tight">
+              {playerHand.every(t => t.isRevealed) ? 'AI ชนะ!' : 'คุณชนะ!'}
             </h2>
-            <p className="text-sm font-extrabold text-gold uppercase tracking-widest mb-6 leading-relaxed">
-              {playerHand.every(t => t.isRevealed) ? 'AI บอทคือผู้ชนะ!' : 'คุณคือผู้ชนะการแข่งขัน!'}
+            <p className="text-[11px] font-semibold text-ivory/45 uppercase tracking-widest mb-6 leading-none">
+              ผลการแข่งขัน
             </p>
 
-            {/* Hand details */}
-            <div className="bg-felt-dark/65 border border-gold/25 rounded-xl p-5 mb-6 space-y-3.5 text-left text-xs shadow-inner">
+            <div className="bg-felt-dark/50 border border-gold/15 rounded-xl p-4 mb-6 space-y-3 text-left text-xs">
               <div className="flex justify-between items-center">
-                <span className="font-semibold text-ivory/50 tracking-wider">คะแนนจากการชนะรอบนี้:</span>
-                <span className="font-bold text-gold tracking-wider">{playerHand.every(t => t.isRevealed) ? 0 : 30} คะแนน</span>
+                <span className="font-semibold text-ivory/50">คะแนนรอบนี้</span>
+                <span className="font-bold text-gold tabular-nums">{playerHand.every(t => t.isRevealed) ? 0 : 30} คะแนน</span>
               </div>
-              <div className="h-px bg-gold/15" />
+              <div className="h-px bg-gold/12" />
               <div className="flex justify-between items-center">
-                <span className="font-semibold text-ivory/50 tracking-wider">คะแนนรวมสะสมทั้งหมด:</span>
-                <span className="font-bold text-gold tracking-wider">คุณ {scores.player} - AI {scores.ai}</span>
+                <span className="font-semibold text-ivory/50">คะแนนสะสม</span>
+                <span className="font-bold text-gold tabular-nums">คุณ {scores.player} — AI {scores.ai}</span>
               </div>
             </div>
 
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2">
               <button
                 onClick={handleRestartGame}
-                className="w-full py-3.5 bg-gold hover:bg-gold-dark text-charcoal-dark font-extrabold text-xs tracking-widest rounded-xl border border-gold-light transition-all duration-300 shadow-md cursor-pointer uppercase"
+                className="w-full py-3.5 bg-gold hover:bg-gold-dark text-charcoal-dark font-bold text-xs tracking-widest rounded-xl border border-gold-light/60 transition-all duration-250 hover:-translate-y-0.5 shadow-md cursor-pointer uppercase"
               >
-                เล่นอีกครั้ง (Play Again)
+                เล่นอีกครั้ง
               </button>
               <button
                 onClick={handleQuitLobby}
-                className="w-full py-3.5 bg-charcoal text-gold border border-gold/30 hover:border-gold font-extrabold text-xs tracking-widest rounded-xl transition-all duration-300 shadow-md cursor-pointer uppercase"
+                className="w-full py-3 bg-transparent text-gold/70 border border-gold/20 hover:border-gold/50 hover:text-gold font-semibold text-xs tracking-widest rounded-xl transition-all duration-200 cursor-pointer uppercase"
               >
-                ออกไปหน้าแรก (Lobby)
+                ออกไปหน้าหลัก
               </button>
             </div>
           </div>
