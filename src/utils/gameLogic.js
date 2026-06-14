@@ -1,5 +1,5 @@
 /**
- * Davinci Code Game Logic & AI Decision Engine
+ * Ghostvinci game logic and AI decision engine.
  */
 
 // Total 26 tiles: 12 Black (0-11), 12 White (0-11), 1 Black Joker (-1), 1 White Joker (-1)

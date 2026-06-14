@@ -27,6 +27,7 @@
   --font-horror: 'Creepster', cursive;
   --font-cinzel: 'Cinzel', serif;
   --font-elite: 'Special Elite', monospace;
+  --breakpoint-xs: 480px;
 }
 
 /* ─── Base ───────────────────────────────────────────────── */
@@ -36,7 +37,7 @@ html, body, #root {
   height: 100%;
   width: 100%;
   margin: 0;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 body {
@@ -53,6 +54,8 @@ body {
   background:
     radial-gradient(ellipse 70% 55% at 50% 30%, #3a1515 0%, #1a1012 50%, #0d0d10 100%);
   position: relative;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 /* Stone texture overlay */
@@ -97,6 +100,8 @@ body {
     inset 0 0 40px rgba(0,0,0,0.7),
     inset 0 1px 0 rgba(220,50,50,0.15),
     0 8px 32px rgba(0,0,0,0.9);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 /* ─── Skull Panel (Header) ───────────────────────────────── */
@@ -123,7 +128,9 @@ body {
   justify-content: space-between;
   padding: 8px 7px;
   overflow: hidden;
-  will-change: transform;
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
   cursor: default;
 }
 
@@ -225,20 +232,38 @@ body {
   border-left: 1px solid #222228 !important;
   border-right: 2px solid #050508 !important;
   border-bottom: 4px solid #030305 !important;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.85), 0 2px 4px rgba(0,0,0,0.6) !important;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2) !important;
 }
 
 /* ─── Joker Slot ─────────────────────────────────────────── */
 .joker-slot {
-  border: 2px dashed rgba(127,29,29,0.55);
+  width: 16px;
+  height: 54px;
+  border: 1.5px dashed rgba(127,29,29,0.55);
   background: rgba(127,29,29,0.04);
-  border-radius: 7px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.25s ease;
   flex-shrink: 0;
+}
+
+@media (min-width: 480px) {
+  .joker-slot {
+    width: 20px;
+    height: 64px;
+    border-width: 2px;
+    border-radius: 6px;
+  }
+}
+
+@media (min-width: 768px) {
+  .joker-slot {
+    width: 28px;
+    height: 76px;
+  }
 }
 
 .joker-slot:hover {
@@ -388,6 +413,24 @@ body {
 }
 .active-blood-pulse {
   animation: bloodDrip 2.5s infinite ease-in-out;
+}
+
+@keyframes ghostBob {
+  0%, 100% {
+    transform: translateY(0) rotate(-1deg) scale(1);
+  }
+  25% {
+    transform: translateY(-5px) rotate(1deg) scale(1.01);
+  }
+  50% {
+    transform: translateY(2px) rotate(-0.5deg) scale(0.995);
+  }
+  75% {
+    transform: translateY(-3px) rotate(0.8deg) scale(1.01);
+  }
+}
+.animate-ghost-bob {
+  animation: ghostBob 4.8s ease-in-out infinite;
 }
 
 /* ─── Pulsing Guessable Shadow ─── */
@@ -644,3 +687,185 @@ body {
 .animate-correctly-guessed {
   animation: correctlyGuessedPulse 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
+
+/* Center Feedback Pop Animation */
+@keyframes feedbackPopCenter {
+  0%   { transform: scale(0.6); opacity: 0; }
+  15%  { transform: scale(1.08); opacity: 1; }
+  25%  { transform: scale(1);   opacity: 1; }
+  80%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(0.85); opacity: 0; }
+}
+.animate-feedback-pop-center {
+  animation: feedbackPopCenter 1.6s forwards cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ─── Haunted Background Extras ──────────────────────────── */
+@keyframes riseEmber {
+  0% {
+    transform: translateY(0) translateX(0) scale(0.6) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.75;
+  }
+  85% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateY(-108vh) translateX(var(--drift-x, 60px)) scale(0.2) rotate(360deg);
+    opacity: 0;
+  }
+}
+.animate-ember {
+  animation: riseEmber 12s linear infinite;
+}
+
+@keyframes driftFog {
+  0% {
+    transform: translateX(-8%) translateY(0) scale(1);
+  }
+  50% {
+    transform: translateX(8%) translateY(-15px) scale(1.05);
+  }
+  100% {
+    transform: translateX(-8%) translateY(0) scale(1);
+  }
+}
+.animate-fog {
+  animation: driftFog var(--duration, 40s) ease-in-out infinite;
+}
+
+@keyframes bloodFlicker {
+  0%, 8%, 18%, 48%, 58%, 100% {
+    opacity: 0;
+  }
+  10%, 14%, 50%, 54% {
+    opacity: 0.25;
+  }
+  12%, 52% {
+    opacity: 0.08;
+  }
+}
+.animate-blood-flicker {
+  animation: bloodFlicker 10s infinite;
+}
+
+/* ─── Premium Landing Page Animations ─── */
+
+/* 1. Cinematic Title Entrance (letter spacing and scale) */
+@keyframes titleCinematic {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+    letter-spacing: 0.25em;
+    transform: scale(0.97) translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    letter-spacing: 0.07em;
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+}
+.animate-title-cinematic {
+  animation: titleCinematic 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, filter, letter-spacing;
+}
+
+/* 2. Staggered Slide-up for components */
+@keyframes fadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+.animate-fade-slide-up {
+  opacity: 0;
+  animation: fadeSlideUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* 3. CTA Breathing Pulse (Idle State) */
+@keyframes ctaPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(239, 68, 68, 0.85);
+  }
+}
+.animate-cta-breath {
+  animation: ctaPulse 2.5s ease-in-out infinite;
+  will-change: box-shadow;
+}
+
+/* 4. Tactile button active animations */
+.btn-ritual-active-effect {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s ease,
+              border-color 0.25s ease,
+              color 0.25s ease,
+              box-shadow 0.25s ease;
+}
+.btn-ritual-active-effect:active {
+  transform: scale(0.96) translate3d(0, 0, 0);
+  filter: brightness(0.92);
+}
+
+/* 5. Smooth Config Button Transitions */
+.config-selector-btn {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.35s ease,
+              border-color 0.35s ease,
+              color 0.35s ease,
+              box-shadow 0.35s ease;
+  will-change: transform, border-color, background-color, box-shadow;
+}
+.config-selector-btn:hover {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #e8e2d5;
+  transform: scale(1.015) translate3d(0, 0, 0);
+}
+.config-selector-btn:active {
+  transform: scale(0.95) translate3d(0, 0, 0);
+  filter: brightness(0.85);
+}
+
+/* 6. Feature Card Hover Effects */
+.feature-card-item {
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.45s ease,
+              background-color 0.45s ease,
+              box-shadow 0.45s ease;
+  will-change: transform, border-color, background-color, box-shadow;
+}
+.feature-card-item:hover {
+  transform: translateY(-4px) scale(1.025) translate3d(0, 0, 0);
+  border-color: rgba(239, 68, 68, 0.38);
+  background-color: rgba(14, 8, 8, 0.65);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 20px rgba(239, 68, 68, 0.12);
+}
+
+/* 7. Dedicated Smooth CTA Button transitions */
+.cta-ritual-btn {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.35s ease,
+              box-shadow 0.45s ease;
+  will-change: transform, box-shadow;
+}
+.cta-ritual-btn:hover {
+  transform: scale(1.04) translate3d(0, 0, 0);
+  box-shadow: 0 0 35px rgba(239, 68, 68, 0.85);
+}
+.cta-ritual-btn:active {
+  transform: scale(0.97) translate3d(0, 0, 0);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
+
+

@@ -1,10 +1,10 @@
 import { useReducer, useEffect } from 'react';
 import { createDeck, shuffle, sortHand, calculateJokerAssignedValue } from '../utils/gameLogic';
 
-const LOCAL_STORAGE_KEY = 'davinci_game_state_v1';
+const LOCAL_STORAGE_KEY = 'ghostvinci_game_state_v1';
 
 const INITIAL_STATE = {
-  gamePhase: 'LOBBY', // LOBBY, DEAL, JOKER_SETUP, TURN_BANNER, DRAW, GUESS, DECIDE, JOKER_PLACEMENT, GAME_OVER
+  gamePhase: 'LOBBY', // LOBBY, DEAL, JOKER_SETUP, TURN_BANNER, DRAW, GUESS, FEEDBACK, DECIDE, JOKER_PLACEMENT, GAME_OVER
   deck: [],
   removedTiles: [],
   playerHand: [],
@@ -12,6 +12,7 @@ const INITIAL_STATE = {
   activePlayer: 'player', // 'player' | 'ai'
   drawnTile: null, // Card currently drawn, placed in separate slot
   lastGuess: null, // { targetIndex, guess, isCorrect }
+  pendingPhase: null, // { phase, state }
   consecutiveCorrectGuesses: 0,
   turnCount: 0,
   elapsedTime: 0,
@@ -24,6 +25,8 @@ const INITIAL_STATE = {
   dealingIndex: 0, 
   jokerSetupIndex: 0, // tracking which Joker is being set up
 };
+
+const createPendingPhase = (phase, state = {}) => ({ phase, state });
 
 function gameReducer(state, action) {
   switch (action.type) {
@@ -53,6 +56,7 @@ function gameReducer(state, action) {
         aiHand: [],
         drawnTile: null,
         lastGuess: null,
+        pendingPhase: null,
         consecutiveCorrectGuesses: 0,
         turnCount: 0,
         elapsedTime: 0,
@@ -253,6 +257,7 @@ function gameReducer(state, action) {
         gamePhase: 'GUESS',
         timeLeft: 20,
         lastGuess: null,
+        pendingPhase: null,
       };
 
     case 'GUESS_TILE': {
@@ -320,9 +325,11 @@ function gameReducer(state, action) {
           playerHand: newPlayerHand,
           aiHand: newAiHand,
           scores: newScores,
-          gamePhase: 'DECIDE',
+          timeLeft: 20,
+          gamePhase: 'FEEDBACK',
           consecutiveCorrectGuesses: consecutiveCorrectGuesses + 1,
-          lastGuess: { targetIndex, guess: guessedValue, isCorrect: true },
+          lastGuess: { targetIndex, guess: guessedValue, guessedColor, isCorrect: true, guesser: activePlayer },
+          pendingPhase: createPendingPhase('DECIDE', { timeLeft: 20 }),
           gameLogs: [...logs, ...state.gameLogs],
         };
       } else {
@@ -343,10 +350,10 @@ function gameReducer(state, action) {
             return {
               ...state,
               drawnTile: revealedDrawn,
-              gamePhase: 'JOKER_PLACEMENT',
-              lastGuess: { targetIndex, guess: guessedValue, isCorrect: false },
+              gamePhase: 'FEEDBACK',
+              lastGuess: { targetIndex, guess: guessedValue, guessedColor, isCorrect: false, guesser: activePlayer },
+              pendingPhase: createPendingPhase('JOKER_PLACEMENT', { timeLeft: 5 }),
               gameLogs: [...logs, ...state.gameLogs],
-              timeLeft: 5,
             };
           } else {
             // Automatically insert normal tile in sorted order
@@ -362,13 +369,15 @@ function gameReducer(state, action) {
               ...state,
               playerHand: newPlayerHand,
               aiHand: newAiHand,
-              drawnTile: null,
-              gamePhase: 'TURN_BANNER',
-              activePlayer: activePlayer === 'player' ? 'ai' : 'player',
+              gamePhase: 'FEEDBACK',
               consecutiveCorrectGuesses: 0,
-              lastGuess: { targetIndex, guess: guessedValue, isCorrect: false },
+              lastGuess: { targetIndex, guess: guessedValue, guessedColor, isCorrect: false, guesser: activePlayer },
+              pendingPhase: createPendingPhase('TURN_BANNER', {
+                drawnTile: null,
+                activePlayer: activePlayer === 'player' ? 'ai' : 'player',
+                timeLeft: 20,
+              }),
               gameLogs: [...logs, ...state.gameLogs],
-              timeLeft: 20,
             };
           }
         } else {
@@ -378,9 +387,10 @@ function gameReducer(state, action) {
             logs.push(`บทลงโทษกองจั่วหมด! กรุณาเลือกการ์ดใบใดใบหนึ่งของคุณเพื่อเปิดเผยเพื่อลงโทษ`);
             return {
               ...state,
-              gamePhase: 'PENALTY_REVEAL',
+              gamePhase: 'FEEDBACK',
               consecutiveCorrectGuesses: 0,
-              lastGuess: { targetIndex, guess: guessedValue, isCorrect: false },
+              lastGuess: { targetIndex, guess: guessedValue, guessedColor, isCorrect: false, guesser: activePlayer },
+              pendingPhase: createPendingPhase('PENALTY_REVEAL'),
               gameLogs: [...logs, ...state.gameLogs],
             };
           } else {
@@ -412,16 +422,29 @@ function gameReducer(state, action) {
               ...state,
               playerHand: newPlayerHand,
               aiHand: newAiHand,
-              gamePhase: 'TURN_BANNER',
-              activePlayer: 'player',
+              gamePhase: 'FEEDBACK',
               consecutiveCorrectGuesses: 0,
-              lastGuess: { targetIndex, guess: guessedValue, isCorrect: false },
+              lastGuess: { targetIndex, guess: guessedValue, guessedColor, isCorrect: false, guesser: activePlayer },
+              pendingPhase: createPendingPhase('TURN_BANNER', {
+                activePlayer: 'player',
+                timeLeft: 20,
+              }),
               gameLogs: [...logs, ...state.gameLogs],
-              timeLeft: 20,
             };
           }
         }
       }
+    }
+
+    case 'ACKNOWLEDGE_FEEDBACK': {
+      if (state.gamePhase !== 'FEEDBACK' || !state.pendingPhase) return state;
+
+      return {
+        ...state,
+        ...state.pendingPhase.state,
+        gamePhase: state.pendingPhase.phase,
+        pendingPhase: null,
+      };
     }
 
     case 'PENALTY_SELECT_PLAYER_CARD': {
@@ -605,6 +628,7 @@ function gameReducer(state, action) {
         aiHand: [],
         drawnTile: null,
         lastGuess: null,
+        pendingPhase: null,
       };
 
     case 'TICK_ELAPSED': {
@@ -620,9 +644,11 @@ function gameReducer(state, action) {
   }
 }
 
+export { INITIAL_STATE, gameReducer };
+
 export const useGameState = () => {
   const [state, dispatch] = useReducer(gameReducer, INITIAL_STATE, (initial) => {
-    // Attempt loading from localStorage on initialization
+      // Load saved game state from localStorage on startup.
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
@@ -636,11 +662,10 @@ export const useGameState = () => {
     return initial;
   });
 
-  // Persist state to localStorage whenever it changes
+  // Persist state to localStorage whenever it changes.
   useEffect(() => {
     try {
-      // We don't want to save transient timers or active ticks if we reload,
-      // but keeping basic structure is key.
+      // Keep the saved snapshot lightweight; transient state is fine to restore on reload.
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
     } catch (e) {
       console.error('Failed to save state to localStorage', e);
