@@ -1,37 +1,68 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import SetupScreen from './SetupScreen';
 
-const renderSetupScreen = (props = {}) => {
-  const defaultProps = {
-    aiDifficulty: 'easy',
-    cardRemovalCount: 0,
-    onConfigChange: vi.fn(),
-    onStartGame: vi.fn(),
-    playSFX: vi.fn(),
-    onOpenSettings: vi.fn(),
-    scores: { player: 0, ai: 0 },
-    onResetScores: vi.fn(),
-  };
+const createDefaultProps = () => ({
+  aiDifficulty: 'easy',
+  cardRemovalCount: 0,
+  onConfigChange: vi.fn(),
+  onStartGame: vi.fn(),
+  playSFX: vi.fn(),
+  onOpenSettings: vi.fn(),
+  scores: { player: 0, ai: 0 },
+  onResetScores: vi.fn(),
+});
 
-  const result = render(<SetupScreen {...defaultProps} {...props} />);
+const loadSetupScreen = async ({ lobbyShellMock } = {}) => {
+  vi.resetModules();
+
+  if (lobbyShellMock) {
+    vi.doMock('./lobby/LobbyShell', () => ({
+      default: lobbyShellMock,
+    }));
+  } else {
+    vi.doUnmock('./lobby/LobbyShell');
+  }
+
+  const module = await import('./SetupScreen');
+  return module.default;
+};
+
+const renderSetupScreen = async (props = {}) => {
+  const SetupScreen = await loadSetupScreen();
+  const mergedProps = { ...createDefaultProps(), ...props };
+  const result = render(<SetupScreen {...mergedProps} />);
 
   return {
     ...result,
-    props: { ...defaultProps, ...props },
+    props: mergedProps,
   };
 };
 
 describe('SetupScreen', () => {
   afterEach(() => {
     cleanup();
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.doUnmock('./lobby/LobbyShell');
   });
 
-  it('changes difficulty through the visible option and sends the expected config payload', () => {
+  it('passes the lobby contract through to LobbyShell', async () => {
+    const lobbyShellSpy = vi.fn(() => <div data-testid="setup-screen-wrapper-probe" />);
+    const SetupScreen = await loadSetupScreen({ lobbyShellMock: lobbyShellSpy });
+    const props = createDefaultProps();
+
+    render(<SetupScreen {...props} />);
+
+    expect(screen.getByTestId('setup-screen-wrapper-probe')).toBeInTheDocument();
+    expect(lobbyShellSpy).toHaveBeenCalledTimes(1);
+    expect(lobbyShellSpy.mock.calls[0][0]).toMatchObject(props);
+  });
+
+  it('changes difficulty through the visible option and sends the expected config payload', async () => {
     const onConfigChange = vi.fn();
 
-    renderSetupScreen({
+    await renderSetupScreen({
       aiDifficulty: 'easy',
       cardRemovalCount: 2,
       onConfigChange,
@@ -48,10 +79,10 @@ describe('SetupScreen', () => {
     });
   });
 
-  it('changes card removal count through the visible option and sends the expected config payload', () => {
+  it('changes card removal count through the visible option and sends the expected config payload', async () => {
     const onConfigChange = vi.fn();
 
-    renderSetupScreen({
+    await renderSetupScreen({
       aiDifficulty: 'medium',
       cardRemovalCount: 0,
       onConfigChange,
@@ -68,20 +99,31 @@ describe('SetupScreen', () => {
     });
   });
 
-  it('opens settings from the top bar action', () => {
+  it('opens settings from the top bar action', async () => {
     const onOpenSettings = vi.fn();
 
-    renderSetupScreen({ onOpenSettings });
+    await renderSetupScreen({ onOpenSettings });
 
     fireEvent.click(screen.getByRole('button', { name: 'ตั้งค่าเสียง' }));
 
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
-  it('starts the game from the primary ritual action', () => {
+  it('allows the settings action to be pressed when onOpenSettings is omitted', async () => {
+    const playSFX = vi.fn();
+
+    await renderSetupScreen({ onOpenSettings: undefined, playSFX });
+
+    expect(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'ตั้งค่าเสียง' }));
+    }).not.toThrow();
+    expect(playSFX).toHaveBeenCalledWith('flip');
+  });
+
+  it('starts the game from the primary ritual action', async () => {
     const onStartGame = vi.fn();
 
-    renderSetupScreen({ onStartGame });
+    await renderSetupScreen({ onStartGame });
 
     fireEvent.click(screen.getByRole('button', { name: 'เข้าสู่พิธีกรรม' }));
 
