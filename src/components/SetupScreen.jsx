@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, Skull, Sparkles, Flame, Eye, Layers, HelpCircle, ChevronLeft, ChevronRight, BookOpen, X } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Settings, Skull, Sparkles, Flame, Eye, Layers, ChevronDown } from 'lucide-react';
 
 const EMBERS = Array.from({ length: 7 }, (_, i) => ({
   left: `${10 + i * 12}%`,
@@ -27,26 +27,18 @@ export default function SetupScreen({
   cardRemovalCount,
   onConfigChange,
   onStartGame,
-  isMuted,
-  onToggleMute,
   playSFX,
   onOpenSettings,
   scores,
   onResetScores,
 }) {
-  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('intro');
+  const tutorialRef = useRef(null);
 
-  useEffect(() => {
-    if (!isTutorialOpen) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setIsTutorialOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isTutorialOpen]);
+  const handleScrollToTutorial = () => {
+    if (playSFX) playSFX('flip');
+    tutorialRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <div className="relative min-h-screen overflow-x-hidden overflow-y-auto bg-haunted font-thai select-none">
@@ -93,18 +85,8 @@ export default function SetupScreen({
 
       <div className="absolute right-5 top-5 z-20 flex items-center gap-2">
         <button
-          onClick={() => {
-            if (playSFX) playSFX('flip');
-            setIsTutorialOpen(true);
-            setActiveTab('intro');
-          }}
-          title="วิธีการเล่น"
-          className="group border-2 border-[rgba(127,29,29,0.32)] bg-[rgba(10,10,12,0.9)] p-4 text-bone shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-xl hover:scale-110 active:scale-95 hover:border-red-500 hover:text-red-405 hover:shadow-[0_0_25px_rgba(239,68,68,0.35)] transition-all duration-300 ease-out cursor-pointer relative flex items-center justify-center"
-        >
-          <HelpCircle className="h-6 w-6 text-rose-500 transition-transform duration-300 group-hover:scale-110" strokeWidth={2} />
-        </button>
-
-        <button
+          type="button"
+          aria-label="ตั้งค่าเสียง"
           onClick={() => {
             if (playSFX) playSFX('flip');
             onOpenSettings();
@@ -229,6 +211,7 @@ export default function SetupScreen({
                     <button
                       key={diff}
                       type="button"
+                      aria-pressed={aiDifficulty === diff}
                       onClick={() => {
                         if (playSFX) playSFX('flip');
                         onConfigChange({ aiDifficulty: diff, cardRemovalCount });
@@ -262,6 +245,7 @@ export default function SetupScreen({
                     <button
                       key={count}
                       type="button"
+                      aria-pressed={cardRemovalCount === count}
                       onClick={() => {
                         if (playSFX) playSFX('flip');
                         onConfigChange({ aiDifficulty, cardRemovalCount: count });
@@ -312,6 +296,7 @@ export default function SetupScreen({
               )}
 
               <button
+                type="button"
                 onClick={onStartGame}
                 className="flex w-full items-center justify-center gap-3 border-none bg-[#ef4444] animate-cta-breath cta-ritual-btn py-4 text-lg font-black uppercase tracking-[0.26em] text-neutral-950 cursor-pointer sm:py-5 sm:text-xl hover:bg-[#ff5555]"
                 style={{ clipPath: 'polygon(8px 0%, calc(100% - 8px) 0%, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0% calc(100% - 8px), 0% 8px)' }}
@@ -325,33 +310,22 @@ export default function SetupScreen({
         </section>
       </main>
 
-      {/* ── TUTORIAL MODAL ── */}
+      {/* Scroll Down Indicator */}
       <div 
-        onClick={() => {
-          if (playSFX) playSFX('toggle');
-          setIsTutorialOpen(false);
-        }}
-        className={`fixed inset-0 z-[120] flex items-center justify-center bg-black/85 backdrop-blur-[6px] p-4 cursor-pointer transition-all duration-300 ease-in-out ${
-          isTutorialOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        onClick={handleScrollToTutorial}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 cursor-pointer select-none text-[10px] font-black text-rose-500/70 hover:text-rose-450 hover:scale-105 transition-all duration-300 tracking-[0.25em] uppercase"
       >
-        <div 
-          onClick={(e) => e.stopPropagation()}
-          className={`bg-[#0c0c10]/95 border border-[rgba(239,68,68,0.32)] max-w-2xl w-full max-h-[calc(100vh-4rem)] shadow-[0_0_50px_rgba(0,0,0,0.95),0_0_20px_rgba(239,68,68,0.15)] rounded-2xl relative font-thai cursor-default flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${
-            isTutorialOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-4'
-          }`}
-        >
-          {/* Close button top right */}
-          <button
-            onClick={() => {
-              if (playSFX) playSFX('toggle');
-              setIsTutorialOpen(false);
-            }}
-            className="absolute top-4 right-4 p-2 text-bone/40 hover:text-rose-500 rounded-lg hover:bg-black/40 transition-all cursor-pointer z-10"
-          >
-            <X className="w-4 h-4" />
-          </button>
+        <span className="animate-pulse">เลื่อนลงเพื่อดูวิธีเล่น</span>
+        <ChevronDown className="w-5 h-5 text-rose-500 animate-bounce" strokeWidth={2.5} />
+      </div>
 
+      {/* ── INLINE TUTORIAL SECTION ── */}
+      <section 
+        ref={tutorialRef}
+        className="relative z-10 mx-auto max-w-4xl px-6 pb-24 pt-8 animate-fade-slide-up"
+      >
+        <div className="bg-[#0c0c10]/95 border border-[rgba(239,68,68,0.32)] shadow-[0_0_50px_rgba(0,0,0,0.95),0_0_20px_rgba(239,68,68,0.15)] rounded-3xl overflow-hidden relative">
+          
           {/* Tab Selection */}
           <div className="flex border-b border-[rgba(239,68,68,0.15)] bg-black/40 overflow-x-auto select-none font-thai scrollbar-none shrink-0">
             {['intro', 'sorting', 'joker', 'turn'].map((tab) => {
@@ -366,9 +340,9 @@ export default function SetupScreen({
                     if (playSFX) playSFX('flip');
                     setActiveTab(tab);
                   }}
-                  className={`flex-1 py-3.5 px-4 text-xs font-black uppercase tracking-wider text-center transition-all duration-300 border-b-2 cursor-pointer whitespace-nowrap ${
+                  className={`flex-1 py-4 px-4 text-xs font-black uppercase tracking-wider text-center transition-all duration-300 border-b-2 cursor-pointer whitespace-nowrap ${
                     isActive
-                      ? 'border-rose-600 bg-rose-950/20 text-rose-400'
+                      ? 'border-rose-600 bg-rose-950/25 text-rose-400'
                       : 'border-transparent text-bone/45 hover:text-bone/80 hover:bg-black/20'
                   }`}
                 >
@@ -378,8 +352,8 @@ export default function SetupScreen({
             })}
           </div>
 
-          {/* Grimoire Content Scroll Area */}
-          <div className="curse-scrollbar p-6 sm:p-8 space-y-6 flex-1 overflow-y-auto font-thai text-bone">
+          {/* Grimoire Content area */}
+          <div className="p-6 sm:p-8 space-y-6 font-thai text-bone">
             {activeTab === 'intro' && (
               <div className="space-y-4 animate-fade-slide-up">
                 <div className="border-l-4 border-rose-600 pl-3">
@@ -485,7 +459,6 @@ export default function SetupScreen({
                   <div className="p-4 bg-black/30 border border-red-950/30 rounded-xl space-y-2">
                     <span className="block text-xs font-black text-rose-500 uppercase tracking-widest text-center">ไพ่โจ๊กเกอร์สีดำ (Black Joker)</span>
                     <div className="flex justify-center py-2">
-                      {/* Black Joker Card Frame containing joker.png */}
                       <div className="w-20 h-32 bg-neutral-950 border-2 border-neutral-800 rounded-2xl flex flex-col items-center justify-between p-2 shadow-2xl relative">
                         <span className="text-xs font-black text-neutral-500 self-start font-cinzel leading-none">J</span>
                         <div className="flex-1 flex items-center justify-center overflow-hidden">
@@ -502,7 +475,6 @@ export default function SetupScreen({
                   <div className="p-4 bg-black/30 border border-red-950/30 rounded-xl space-y-2">
                     <span className="block text-xs font-black text-rose-500 uppercase tracking-widest text-center">ไพ่โจ๊กเกอร์สีขาว (White Joker)</span>
                     <div className="flex justify-center py-2">
-                      {/* White Joker Card Frame containing joker.png */}
                       <div className="w-20 h-32 bg-white border-2 border-neutral-300 rounded-2xl flex flex-col items-center justify-between p-2 shadow-2xl relative">
                         <span className="text-xs font-black text-neutral-700 self-start font-cinzel leading-none">J</span>
                         <div className="flex-1 flex items-center justify-center overflow-hidden">
@@ -586,21 +558,8 @@ export default function SetupScreen({
               </div>
             )}
           </div>
-
-          {/* Close button at bottom */}
-          <div className="p-6 bg-black/45 border-t border-[rgba(239,68,68,0.15)] flex justify-end shrink-0">
-            <button
-              onClick={() => {
-                if (playSFX) playSFX('flip');
-                setIsTutorialOpen(false);
-              }}
-              className="px-6 py-3 bg-[#100606] hover:bg-[#1c0808] text-[#ef4444] font-black text-xs tracking-[0.2em] border border-red-900/40 hover:border-red-650 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all duration-300 rounded-xl cursor-pointer uppercase active:scale-[0.97]"
-            >
-              ปิดคู่มือ
-            </button>
-          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
