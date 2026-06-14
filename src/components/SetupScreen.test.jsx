@@ -68,15 +68,21 @@ describe('SetupScreen', () => {
       onConfigChange,
     });
 
-    expect(screen.getByRole('button', { name: 'ง่าย' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'อันตราย' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'เธเนเธฒเธข' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'เธญเธฑเธเธ•เธฃเธฒเธข' })).toHaveAttribute('aria-pressed', 'false');
 
-    fireEvent.click(screen.getByRole('button', { name: 'อันตราย' }));
+    fireEvent.click(screen.getByRole('button', { name: 'เธญเธฑเธเธ•เธฃเธฒเธข' }));
 
     expect(onConfigChange).toHaveBeenCalledWith({
       aiDifficulty: 'hard',
       cardRemovalCount: 2,
     });
+  });
+
+  it('shows the current mode as single player', async () => {
+    await renderSetupScreen();
+
+    expect(screen.getByText('Single Player')).toBeInTheDocument();
   });
 
   it('changes card removal count through the visible option and sends the expected config payload', async () => {
@@ -125,7 +131,7 @@ describe('SetupScreen', () => {
 
     await renderSetupScreen({ onStartGame });
 
-    fireEvent.click(screen.getByRole('button', { name: 'เข้าสู่พิธีกรรม' }));
+    fireEvent.click(screen.getByRole('button', { name: 'เริ่มพิธีกรรม' }));
 
     expect(onStartGame).toHaveBeenCalledTimes(1);
   });
