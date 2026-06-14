@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function LobbySection({ title, helper, children }) {
   return (
     <section className="space-y-3">

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Skull } from 'lucide-react';
 
 export default function PrimaryLobbyAction({ onStartGame }) {

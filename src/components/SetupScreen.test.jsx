@@ -1,4 +1,3 @@
-import React from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -82,7 +81,7 @@ describe('SetupScreen', () => {
   it('shows the current mode as single player', async () => {
     await renderSetupScreen();
 
-    expect(screen.getByText('Single Player')).toBeInTheDocument();
+    expect(screen.getByText('Single Player', { selector: 'span.text-sm' })).toBeInTheDocument();
   });
 
   it('changes card removal count through the visible option and sends the expected config payload', async () => {
@@ -140,5 +139,20 @@ describe('SetupScreen', () => {
     await renderSetupScreen();
 
     expect(screen.getByTestId('lobby-control-panel')).toHaveClass('lobby-panel');
+  });
+
+  it('renders the stage brand block and decorative floating card cluster', async () => {
+    await renderSetupScreen();
+
+    expect(screen.getByRole('heading', { name: 'Ghostvinci' })).toBeInTheDocument();
+    expect(screen.getByTestId('floating-card-cluster')).toBeInTheDocument();
+  });
+
+  it('keeps the desktop-first lobby shell grid class', async () => {
+    await renderSetupScreen();
+
+    expect(screen.getByTestId('lobby-shell').innerHTML).toMatch(
+      /lg:grid-cols-\[minmax\(0,1\.2fr\)_420px\]/,
+    );
   });
 });

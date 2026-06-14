@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function ModeStatusField() {
   return (
     <div className="rounded-2xl border border-white/8 bg-black/30 px-4 py-3">

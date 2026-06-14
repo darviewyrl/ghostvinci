@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function ScoreSummaryWidget({ scores, onResetScores, playSFX }) {
   if (!scores || (scores.player === 0 && scores.ai === 0)) return null;
 

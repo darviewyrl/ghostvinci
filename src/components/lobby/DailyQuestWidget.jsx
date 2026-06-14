@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function DailyQuestWidget() {
   return (
     <div className="rounded-2xl border border-[rgba(127,29,29,0.22)] bg-black/20 p-4">

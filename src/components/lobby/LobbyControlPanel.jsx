@@ -1,4 +1,3 @@
-import React from 'react';
 import CardRemovalSelector from './CardRemovalSelector';
 import DailyQuestWidget from './DailyQuestWidget';
 import DifficultySelector from './DifficultySelector';

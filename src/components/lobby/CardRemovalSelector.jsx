@@ -1,5 +1,3 @@
-import React from 'react';
-
 const OPTIONS = [0, 2, 4, 6];
 
 export default function CardRemovalSelector({
