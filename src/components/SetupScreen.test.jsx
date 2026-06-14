@@ -129,4 +129,10 @@ describe('SetupScreen', () => {
 
     expect(onStartGame).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps the reusable lobby-panel styling hook on the control panel', async () => {
+    await renderSetupScreen();
+
+    expect(screen.getByTestId('lobby-control-panel')).toHaveClass('lobby-panel');
+  });
 });

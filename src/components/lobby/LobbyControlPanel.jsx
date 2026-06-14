@@ -26,7 +26,7 @@ export default function LobbyControlPanel({
   return (
     <aside
       data-testid="lobby-control-panel"
-      className="rounded-[28px] border border-red-900/55 bg-[rgba(10,10,14,0.92)] p-6 shadow-[0_0_50px_rgba(0,0,0,0.85),0_0_20px_rgba(239,68,68,0.15)] sm:p-8"
+      className="lobby-panel p-6 sm:p-8"
     >
       <p className="text-xs font-black uppercase tracking-[0.24em] text-[rgba(230,80,80,0.9)]">
         Ritual Lobby

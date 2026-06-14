@@ -46,6 +46,7 @@ export default {
         },
       },
       fontFamily: {
+        cinzel: ['Cinzel', 'serif'],
         thai: ['Kanit', 'Noto Sans Thai', 'sans-serif'],
       },
     },
