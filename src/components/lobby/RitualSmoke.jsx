@@ -12,8 +12,12 @@ export default function RitualSmoke() {
       {SMOKE_PUFFS.map((puff, index) => (
         <div
           key={puff.id}
-          className={`absolute rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.13),rgba(255,255,255,0.02)_55%,transparent_72%)] blur-3xl opacity-55 animate-fog ${puff.className}`}
-          style={{ ['--duration']: `${34 + index * 6}s` }}
+          className={`absolute bg-center bg-no-repeat bg-contain opacity-55 animate-fog ${puff.className}`}
+          style={{
+            backgroundImage: `url(${index % 2 === 0 ? '/lobby/fx/smoke-left.svg' : '/lobby/fx/smoke-right.svg'})`,
+            filter: 'blur(22px)',
+            '--duration': `${34 + index * 6}s`,
+          }}
         />
       ))}
     </div>

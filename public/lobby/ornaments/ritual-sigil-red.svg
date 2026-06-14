@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-hidden="true">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(239,68,68,0.32)"/>
+      <stop offset="65%" stop-color="rgba(239,68,68,0.06)"/>
+      <stop offset="100%" stop-color="rgba(239,68,68,0)"/>
+    </radialGradient>
+  </defs>
+  <circle cx="600" cy="600" r="460" fill="none" stroke="rgba(239,68,68,0.2)" stroke-width="6"/>
+  <circle cx="600" cy="600" r="350" fill="none" stroke="rgba(239,68,68,0.18)" stroke-width="4" stroke-dasharray="10 18"/>
+  <circle cx="600" cy="600" r="240" fill="none" stroke="rgba(239,68,68,0.28)" stroke-width="8"/>
+  <circle cx="600" cy="600" r="90" fill="url(#glow)"/>
+  <g stroke="rgba(239,68,68,0.28)" stroke-width="4" fill="none">
+    <path d="M600 120V240"/>
+    <path d="M600 960V840"/>
+    <path d="M120 600H240"/>
+    <path d="M960 600H1080"/>
+    <path d="M330 330L420 420"/>
+    <path d="M870 330L780 420"/>
+    <path d="M330 870L420 780"/>
+    <path d="M870 870L780 780"/>
+  </g>
+  <g fill="rgba(239,68,68,0.26)">
+    <path d="M600 300l18 42 45 3-35 29 11 44-39-23-39 23 11-44-35-29 45-3z"/>
+    <path d="M600 870l18-42 45-3-35-29 11-44-39 23-39-23 11 44-35 29 45 3z"/>
+  </g>
+</svg>

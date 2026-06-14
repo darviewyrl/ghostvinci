@@ -9,9 +9,12 @@ export default function FloatingCardCluster() {
           key={card.id}
           className={`absolute h-[180px] w-[120px] rounded-[18px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(35,26,28,0.96),rgba(17,16,21,0.98))] shadow-[0_20px_60px_rgba(0,0,0,0.55)] ${card.className}`}
         >
-          <div className="flex h-full items-center justify-center text-4xl font-black text-bone/70 font-cinzel">
-            {card.label}
-          </div>
+          <img
+            src={card.src}
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full rounded-[18px] object-cover"
+          />
         </div>
       ))}
     </div>
