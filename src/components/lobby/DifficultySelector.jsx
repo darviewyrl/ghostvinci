@@ -1,3 +1,4 @@
+import React from 'react';
 const OPTIONS = [
   { id: 'easy', label: 'เธเนเธฒเธข' },
   { id: 'medium', label: 'เธเธฒเธเธเธฅเธฒเธ' },

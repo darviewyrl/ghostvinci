@@ -1,3 +1,4 @@
+import React from 'react';
 import LobbyControlPanel from './LobbyControlPanel';
 import LobbyScene from './LobbyScene';
 import LobbyTopBar from './LobbyTopBar';

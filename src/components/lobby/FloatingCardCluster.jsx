@@ -1,3 +1,4 @@
+import React from 'react';
 import { FLOATING_CARDS } from './lobbySceneData';
 
 export default function FloatingCardCluster() {

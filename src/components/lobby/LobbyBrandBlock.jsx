@@ -1,3 +1,4 @@
+import React from 'react';
 import { LOBBY_INFO_PILLS } from './lobbySceneData';
 
 export default function LobbyBrandBlock() {

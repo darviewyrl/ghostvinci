@@ -1,3 +1,4 @@
+import React from 'react';
 const EMBERS = Array.from({ length: 7 }, (_, index) => ({
   id: index,
   left: `${10 + index * 12}%`,
