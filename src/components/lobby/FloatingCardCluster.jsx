@@ -3,7 +3,7 @@ import { FLOATING_CARDS } from './lobbySceneData';
 
 export default function FloatingCardCluster() {
   return (
-    <div data-testid="floating-card-cluster" className="pointer-events-none absolute inset-0 hidden lg:block">
+    <div data-testid="floating-card-cluster" className="pointer-events-none absolute inset-0 hidden lg:block opacity-0">
       {FLOATING_CARDS.map((card) => (
         <div
           key={card.id}
@@ -13,7 +13,7 @@ export default function FloatingCardCluster() {
             src={card.src}
             alt=""
             aria-hidden="true"
-            className="h-full w-full rounded-[18px] object-cover"
+            className="h-full w-full rounded-[18px] object-cover opacity-95"
           />
         </div>
       ))}

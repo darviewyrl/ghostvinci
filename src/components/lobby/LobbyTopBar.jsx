@@ -12,7 +12,7 @@ export default function LobbyTopBar({ playSFX, onOpenSettings }) {
       <button
         type="button"
         aria-label="ตั้งค่าเสียง"
-        className="rounded-xl border-2 border-[rgba(127,29,29,0.32)] bg-[rgba(10,10,12,0.9)] p-4 text-bone shadow-[0_0_15px_rgba(239,68,68,0.15)]"
+        className="lobby-icon-button"
         onClick={handleOpenSettings}
       >
         <Settings className="h-6 w-6 text-rose-500" strokeWidth={2} />

@@ -1,9 +1,10 @@
 import React from 'react';
+
 export default function ScoreSummaryWidget({ scores, onResetScores, playSFX }) {
   if (!scores || (scores.player === 0 && scores.ai === 0)) return null;
 
   return (
-    <div className="rounded-[20px] border border-white/8 bg-black/25 p-4">
+    <div className="rounded-sm border border-white/8 bg-black/25 p-4">
       <div className="mb-3 flex items-center justify-between">
         <span className="text-xs font-black uppercase tracking-[0.2em] text-[rgba(230,80,80,0.9)]">
           คะแนนล่าสุด
@@ -21,7 +22,7 @@ export default function ScoreSummaryWidget({ scores, onResetScores, playSFX }) {
       </div>
       <div className="flex items-center justify-center gap-5 text-center">
         <div>
-          <span className="block text-[11px] uppercase tracking-widest text-bone/50">คุณ</span>
+          <span className="block text-[11px] uppercase tracking-widest text-bone/50">You</span>
           <span className="text-3xl font-black text-emerald-400">{scores.player}</span>
         </div>
         <div className="text-2xl font-black text-bone/25">:</div>

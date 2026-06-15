@@ -2,31 +2,29 @@ import React from 'react';
 import AmbientParticles from './AmbientParticles';
 import FloatingCardCluster from './FloatingCardCluster';
 import LobbyBrandBlock from './LobbyBrandBlock';
-import RitualSilhouette from './RitualSilhouette';
-import RitualSmoke from './RitualSmoke';
+import { LOBBY_ASSETS } from './lobbySceneData';
 
 export default function LobbyScene() {
   return (
     <section
       data-testid="lobby-scene"
       data-uses-layered-assets="true"
-      className="relative min-h-[560px] overflow-hidden rounded-[32px]"
+      className="relative min-h-[640px] overflow-hidden"
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_24%,rgba(117,24,24,0.28),transparent_34%),radial-gradient(circle_at_50%_50%,rgba(0,0,0,0.16),transparent_55%),linear-gradient(180deg,#08080a_0%,#110809_55%,#050506_100%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.28)_25%,rgba(0,0,0,0.18)_50%,rgba(0,0,0,0.28)_75%,rgba(0,0,0,0.56)_100%)]" />
-      <div className="absolute inset-0 rounded-[32px] border border-white/5" />
-      <div className="absolute left-1/2 top-[8%] h-[74%] w-[74%] -translate-x-1/2 rounded-full border border-[rgba(147,51,51,0.16)] shadow-[0_0_0_1px_rgba(147,51,51,0.08),0_0_100px_rgba(239,68,68,0.08)]" />
-      <div className="absolute left-1/2 top-[10%] h-[62%] w-[62%] -translate-x-1/2 rounded-full border border-[rgba(147,51,51,0.18)] opacity-70" />
-      <div className="absolute left-1/2 top-[18%] h-[46%] w-[46%] -translate-x-1/2 rounded-full border border-[rgba(239,68,68,0.08)] opacity-65" />
-      <RitualSmoke />
+      <img
+        src={LOBBY_ASSETS.ritualPlate}
+        alt=""
+        aria-hidden="true"
+        width="1792"
+        height="1024"
+        fetchPriority="high"
+        className="absolute inset-0 h-full w-full object-cover object-center"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.18)_0%,rgba(0,0,0,0.02)_44%,rgba(0,0,0,0.42)_100%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black via-black/70 to-transparent" />
       <AmbientParticles />
-      <div className="pointer-events-none absolute left-1/2 top-[10%] h-[58%] w-[58%] -translate-x-1/2 rounded-full border border-[rgba(239,68,68,0.14)] opacity-80">
-        <div className="absolute inset-[10%] rounded-full border border-[rgba(239,68,68,0.08)]" />
-        <div className="absolute inset-[22%] rounded-full border border-[rgba(239,68,68,0.1)]" />
-      </div>
-      <RitualSilhouette />
       <FloatingCardCluster />
-      <div className="relative z-10 flex min-h-[560px] items-end p-6 lg:p-10">
+      <div className="absolute bottom-0 left-0 right-0 z-10 flex min-h-[640px] items-end p-6 lg:p-10">
         <LobbyBrandBlock />
       </div>
     </section>

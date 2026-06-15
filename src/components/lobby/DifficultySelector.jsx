@@ -1,8 +1,10 @@
 import React from 'react';
+import DifficultyIcon from './DifficultyIcon';
+
 const OPTIONS = [
-  { id: 'easy', label: 'เธเนเธฒเธข' },
-  { id: 'medium', label: 'เธเธฒเธเธเธฅเธฒเธ' },
-  { id: 'hard', label: 'เธญเธฑเธเธ•เธฃเธฒเธข' },
+  { id: 'easy', label: 'ง่าย' },
+  { id: 'medium', label: 'ปานกลาง' },
+  { id: 'hard', label: 'อันตราย' },
 ];
 
 export default function DifficultySelector({
@@ -12,24 +14,31 @@ export default function DifficultySelector({
   playSFX,
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {OPTIONS.map((option) => (
-        <button
-          key={option.id}
-          type="button"
-          aria-pressed={aiDifficulty === option.id}
-          className={`lobby-tile ${aiDifficulty === option.id ? 'lobby-tile-active' : ''}`}
-          onClick={() => {
-            if (playSFX) playSFX('flip');
-            onConfigChange({
-              aiDifficulty: option.id,
-              cardRemovalCount,
-            });
-          }}
-        >
-          <span>{option.label}</span>
-        </button>
-      ))}
+    <div className="grid grid-cols-3 gap-3">
+      {OPTIONS.map((option) => {
+        const active = aiDifficulty === option.id;
+
+        return (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={active}
+            className={`lobby-tile ${active ? 'lobby-tile-active' : ''}`}
+            onClick={() => {
+              if (playSFX) playSFX('flip');
+              onConfigChange({
+                aiDifficulty: option.id,
+                cardRemovalCount,
+              });
+            }}
+          >
+            <span className="flex flex-col items-center gap-3">
+              <DifficultyIcon variant={option.id} active={active} />
+              <span>{option.label}</span>
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

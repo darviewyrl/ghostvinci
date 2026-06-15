@@ -10,6 +10,7 @@ export default function PrimaryLobbyAction({ onStartGame }) {
     >
       <Skull className="h-5 w-5" />
       <span>เริ่มพิธีกรรม</span>
+      <Skull className="h-5 w-5" />
     </button>
   );
 }
