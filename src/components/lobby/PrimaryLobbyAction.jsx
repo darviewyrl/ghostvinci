@@ -5,12 +5,12 @@ export default function PrimaryLobbyAction({ onStartGame }) {
   return (
     <button
       type="button"
-      className="lobby-button-primary mt-6 w-full px-4 py-4 text-lg"
+      className="lobby-button-primary mt-2 w-full px-4 py-3.5 text-lg"
       onClick={onStartGame}
     >
-      <Skull className="h-5 w-5" />
-      <span>เริ่มพิธีกรรม</span>
-      <Skull className="h-5 w-5" />
+      <Skull className="lobby-button-primary__icon h-5 w-5" />
+      <span className="lobby-button-primary__label">เริ่มพิธีกรรม</span>
+      <Skull className="lobby-button-primary__icon h-5 w-5" />
     </button>
   );
 }

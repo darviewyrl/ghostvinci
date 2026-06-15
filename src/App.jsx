@@ -5,7 +5,7 @@ import GameHUD from './components/GameHUD';
 import { useGameState } from './hooks/useGameState';
 import { useAudio } from './hooks/useAudio';
 import { getAIDecision, calculateCandidatesForHand } from './utils/gameLogic';
-import { X, Settings, Volume2, VolumeX, Music } from 'lucide-react';
+import { X, Settings, Volume2, VolumeX, Music, Sliders } from 'lucide-react';
 import SmoothSlider from './components/SmoothSlider';
 
 export default function App() {
@@ -13,6 +13,42 @@ export default function App() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isQuitConfirmOpen, setIsQuitConfirmOpen] = useState(false);
+
+  const [dailyQuest, setDailyQuest] = useState(() => {
+    const saved = localStorage.getItem('ghostvinci_daily_quest_v1');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // use default
+      }
+    }
+    return {
+      title: 'ชนะเกม 3 ครั้ง',
+      progress: 2,
+      target: 3,
+      claimed: false,
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ghostvinci_daily_quest_v1', JSON.stringify(dailyQuest));
+  }, [dailyQuest]);
+
+  const handleClaimReward = () => {
+    playSFX('victory');
+    setDailyQuest(prev => ({ ...prev, claimed: true }));
+  };
+
+  const handleResetQuest = () => {
+    playSFX('flip');
+    setDailyQuest({
+      title: 'ชนะเกม 3 ครั้ง',
+      progress: 0,
+      target: 3,
+      claimed: false,
+    });
+  };
 
   const {
     gamePhase,
@@ -103,6 +139,27 @@ export default function App() {
 
     return () => clearTimeout(timer);
   }, [gamePhase, state.lastGuess]);
+
+  const questProcessedRef = useRef(false);
+
+  useEffect(() => {
+    if (gamePhase === 'GAME_OVER') {
+      if (!questProcessedRef.current) {
+        questProcessedRef.current = true;
+        if (!playerLost) {
+          setDailyQuest(prev => {
+            const nextProgress = Math.min(prev.progress + 1, prev.target);
+            return {
+              ...prev,
+              progress: nextProgress,
+            };
+          });
+        }
+      }
+    } else if (gamePhase === 'DEAL' || gamePhase === 'LOBBY') {
+      questProcessedRef.current = false;
+    }
+  }, [gamePhase, playerLost]);
 
   // 2. Turn Countdown Timer
   useEffect(() => {
@@ -253,6 +310,9 @@ export default function App() {
           onResetScores={handleResetScores}
           playSFX={playSFX}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          dailyQuest={dailyQuest}
+          onClaimReward={handleClaimReward}
+          onResetQuest={handleResetQuest}
         />
       ) : (
         <div className="min-h-screen w-full overflow-x-hidden overflow-y-auto bg-haunted relative flex flex-col gap-3 p-2 pb-4 font-thai select-none md:h-screen md:flex-row md:gap-2 md:overflow-hidden md:p-2.5">
@@ -390,13 +450,13 @@ export default function App() {
       >
         <div 
           onClick={(e) => e.stopPropagation()}
-          className={`bg-[#0c0c10]/95 border border-[rgba(239,68,68,0.32)] max-w-md w-full max-h-[calc(100vh-4rem)] shadow-[0_0_50px_rgba(0,0,0,0.95),0_0_20px_rgba(239,68,68,0.15)] rounded-2xl relative font-thai cursor-default flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${
+          className={`bg-[#0c0c10]/95 border border-[rgba(239,68,68,0.32)] max-w-md w-full max-h-[calc(100vh-4rem)] shadow-[0_0_50px_rgba(0,0,0,0.95),0_0_20px_rgba(239,68,68,0.15)] rounded-2xl relative font-thai cursor-default flex flex-col overflow-hidden transition-all duration-300 ease-in-out sm:-translate-x-10 lg:-translate-x-20 xl:-translate-x-28 ${
             isSettingsOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-4'
           }`}
         >
           <div className="overflow-y-auto curse-scrollbar p-6 sm:p-8 space-y-6 flex-1">
             <h3 className="text-base font-black text-bone mb-6 text-center uppercase tracking-widest border-b border-[rgba(239,68,68,0.15)] pb-3 flex items-center justify-center gap-2">
-              <Settings className="w-5 h-5 text-rose-500 animate-[spin_8s_linear_infinite]" />
+              <Sliders className="w-5 h-5 text-red-500 filter drop-shadow-[0_0_6px_rgba(239,68,68,0.85)]" />
               <span>การตั้งค่าเสียงพิธีกรรม</span>
             </h3>
 
@@ -413,10 +473,10 @@ export default function App() {
                       if (playSFX) playSFX('flip');
                       if (isMuted) toggleMute();
                     }}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all duration-200 cursor-pointer flex items-center gap-1.5 hover:scale-105 active:scale-95 ${
+                    className={`settings-segment-button px-3.5 py-1.5 rounded-lg text-xs font-black cursor-pointer flex items-center gap-1.5 ${
                       !isMuted 
-                        ? 'bg-rose-950/60 text-rose-400 border border-rose-800/40 shadow-sm' 
-                        : 'text-bone/40 border border-transparent hover:text-bone/70'
+                        ? 'settings-segment-button-active bg-rose-950/60 text-rose-400 border border-rose-800/40 shadow-sm' 
+                        : 'text-bone/40 border border-transparent'
                     }`}
                   >
                     <Volume2 className="w-3.5 h-3.5" />
@@ -427,10 +487,10 @@ export default function App() {
                       if (playSFX) playSFX('flip');
                       if (!isMuted) toggleMute();
                     }}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all duration-200 cursor-pointer flex items-center gap-1.5 hover:scale-105 active:scale-95 ${
+                    className={`settings-segment-button px-3.5 py-1.5 rounded-lg text-xs font-black cursor-pointer flex items-center gap-1.5 ${
                       isMuted 
-                        ? 'bg-rose-950/60 text-rose-400 border border-rose-800/40 shadow-sm' 
-                        : 'text-bone/40 border border-transparent hover:text-bone/70'
+                        ? 'settings-segment-button-active bg-rose-950/60 text-rose-400 border border-rose-800/40 shadow-sm' 
+                        : 'text-bone/40 border border-transparent'
                     }`}
                   >
                     <VolumeX className="w-3.5 h-3.5" />
@@ -466,7 +526,7 @@ export default function App() {
                   if (playSFX) playSFX('flip');
                   setIsSettingsOpen(false);
                 }}
-                className="w-full py-3.5 mt-2 bg-[#100606] hover:bg-[#1c0808] text-[#ef4444] font-black text-xs tracking-[0.2em] border border-red-900/40 hover:border-red-600 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all duration-300 rounded-xl cursor-pointer uppercase shadow-[0_4px_12px_rgba(0,0,0,0.4)] active:scale-[0.97]"
+                className="settings-close-button w-full py-3.5 mt-2 bg-[#100606] text-[#ef4444] font-black text-xs tracking-[0.2em] border border-red-900/40 rounded-xl cursor-pointer uppercase shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
               >
                 ปิด
               </button>

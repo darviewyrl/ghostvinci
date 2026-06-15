@@ -136,10 +136,13 @@ describe('SetupScreen', () => {
     expect(onStartGame).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the reusable lobby-panel styling hook on the control panel', async () => {
+  it('keeps reusable lobby-panel surfaces in the right control stack', async () => {
     await renderSetupScreen();
 
-    expect(screen.getByTestId('lobby-control-panel')).toHaveClass('lobby-panel');
+    const controlPanel = screen.getByTestId('lobby-control-panel');
+
+    expect(controlPanel).toHaveClass('relative');
+    expect(controlPanel.querySelectorAll('.lobby-panel')).toHaveLength(2);
   });
 
   it('renders the stage brand block and decorative floating card cluster', async () => {
@@ -149,11 +152,13 @@ describe('SetupScreen', () => {
     expect(screen.getByTestId('floating-card-cluster')).toBeInTheDocument();
   });
 
-  it('keeps the desktop-first lobby shell grid class', async () => {
+  it('keeps the full-bleed lobby shell and desktop grid class', async () => {
     await renderSetupScreen();
 
-    expect(screen.getByTestId('lobby-shell').innerHTML).toMatch(
-      /lg:grid-cols-\[minmax\(0,1\.2fr\)_420px\]/,
-    );
+    const lobbyShell = screen.getByTestId('lobby-shell');
+    const main = lobbyShell.querySelector('main');
+
+    expect(lobbyShell).toHaveClass('lobby-shell-bg');
+    expect(main?.className).toContain('lg:grid-cols-[minmax(0,1fr)_minmax(292px,29vw)]');
   });
 });

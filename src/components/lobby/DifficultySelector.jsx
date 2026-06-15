@@ -14,7 +14,7 @@ export default function DifficultySelector({
   playSFX,
 }) {
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-3 gap-2.5">
       {OPTIONS.map((option) => {
         const active = aiDifficulty === option.id;
 
@@ -32,7 +32,7 @@ export default function DifficultySelector({
               });
             }}
           >
-            <span className="flex flex-col items-center gap-3">
+            <span className="flex flex-col items-center gap-2">
               <DifficultyIcon variant={option.id} active={active} />
               <span>{option.label}</span>
             </span>

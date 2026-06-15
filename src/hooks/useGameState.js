@@ -19,8 +19,8 @@ const INITIAL_STATE = {
   timeLeft: 20, // 20s turn timer
   gameLogs: [],
   scores: { player: 0, ai: 0 },
-  aiDifficulty: 'medium',
-  cardRemovalCount: 2,
+  aiDifficulty: 'easy',
+  cardRemovalCount: 6,
   // Animation states for dealing
   dealingIndex: 0, 
   jokerSetupIndex: 0, // tracking which Joker is being set up

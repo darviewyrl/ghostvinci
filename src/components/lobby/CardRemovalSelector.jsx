@@ -10,7 +10,7 @@ export default function CardRemovalSelector({
   playSFX,
 }) {
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-4 gap-2.5">
       {OPTIONS.map((count) => {
         const active = cardRemovalCount === count;
 
@@ -19,7 +19,7 @@ export default function CardRemovalSelector({
             key={count}
             type="button"
             aria-pressed={active}
-            className={`lobby-tile min-h-[104px] ${active ? 'lobby-tile-active' : ''}`}
+            className={`lobby-tile min-h-[64px] ${active ? 'lobby-tile-active' : ''}`}
             onClick={() => {
               if (playSFX) playSFX('flip');
               onConfigChange({
