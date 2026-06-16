@@ -19,7 +19,7 @@ export default function CardRemovalSelector({
             key={count}
             type="button"
             aria-pressed={active}
-            className={`lobby-tile min-h-[64px] ${active ? 'lobby-tile-active' : ''}`}
+            className={`lobby-tile ${active ? 'lobby-tile-active' : ''}`}
             onClick={() => {
               if (playSFX) playSFX('flip');
               onConfigChange({
