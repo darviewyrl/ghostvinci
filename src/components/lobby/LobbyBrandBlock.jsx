@@ -4,6 +4,19 @@ import { BookOpen } from 'lucide-react';
 import LobbyMechanicsPanel from './LobbyMechanicsPanel';
 
 export default function LobbyBrandBlock() {
+  const scrollToGuide = () => {
+    const guide = document.getElementById('ghostvinci-guide');
+    if (!guide) return;
+
+    const scrollContainer = document.getElementById('root');
+    if (scrollContainer && typeof scrollContainer.scrollTo === 'function') {
+      scrollContainer.scrollTo({ top: guide.offsetTop, behavior: 'smooth' });
+      return;
+    }
+
+    window.scrollTo({ top: guide.offsetTop, behavior: 'smooth' });
+  };
+
   return (
     <div className="relative z-10 max-w-[820px] pb-2 text-center lobby-brand-block-container">
       <p className="hidden text-sm font-semibold uppercase tracking-[0.38em] text-[rgba(230,80,80,0.88)]">
@@ -40,6 +53,7 @@ export default function LobbyBrandBlock() {
       <button
         type="button"
         className="lobby-guide-btn mx-auto mt-8 flex min-w-[270px] items-center justify-center gap-3 border border-[rgba(239,68,68,0.38)] bg-[rgba(8,4,5,0.36)] px-8 py-4 shadow-[inset_0_0_18px_rgba(239,68,68,0.08),0_0_26px_rgba(0,0,0,0.5)] cursor-pointer select-none text-bone/92 hover:text-white"
+        onClick={scrollToGuide}
       >
         <span className="flex h-8 w-8 items-center justify-center transition-colors duration-300">
           <BookOpen className="h-5 w-5 text-red-500 filter drop-shadow-[0_0_6px_rgba(239,68,68,0.85)]" strokeWidth={1.8} />

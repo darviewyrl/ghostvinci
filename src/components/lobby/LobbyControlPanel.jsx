@@ -4,7 +4,6 @@ import CardRemovalSelector from './CardRemovalSelector';
 import DailyQuestWidget from './DailyQuestWidget';
 import DifficultySelector from './DifficultySelector';
 import LobbySection from './LobbySection';
-import ModeStatusField from './ModeStatusField';
 import PrimaryLobbyAction from './PrimaryLobbyAction';
 import ScoreSummaryWidget from './ScoreSummaryWidget';
 import InfoTooltip from './InfoTooltip';
@@ -30,9 +29,9 @@ export default function LobbyControlPanel({
   return (
     <aside
       data-testid="lobby-control-panel"
-      className="relative flex flex-col gap-4"
+      className="lobby-control-stack relative z-20 flex flex-col gap-2.5 lg:-translate-y-3"
     >
-      <div className="flex justify-end pr-1">
+      <div className="flex justify-end pr-0.5">
         <button
           type="button"
           aria-label="ตั้งค่าเสียง"
@@ -58,11 +57,7 @@ export default function LobbyControlPanel({
           </div>
         </div>
 
-        <div className="mt-4 space-y-3">
-          <LobbySection title="โหมดการเล่น">
-            <ModeStatusField />
-          </LobbySection>
-
+        <div className="mt-4 space-y-4">
           <LobbySection title="ระดับความร้าย">
             <DifficultySelector
               aiDifficulty={aiDifficulty}
@@ -102,6 +97,7 @@ export default function LobbyControlPanel({
         dailyQuest={dailyQuest}
         onClaimReward={onClaimReward}
         onResetQuest={onResetQuest}
+        playSFX={playSFX}
       />
     </aside>
   );

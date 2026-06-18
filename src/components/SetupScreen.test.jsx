@@ -1,5 +1,5 @@
 import React from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const createDefaultProps = () => ({
@@ -36,6 +36,7 @@ const renderSetupScreen = async (props = {}) => {
   return {
     ...result,
     props: mergedProps,
+    SetupScreen,
   };
 };
 
@@ -82,7 +83,8 @@ describe('SetupScreen', () => {
   it('shows the current mode as single player', async () => {
     await renderSetupScreen();
 
-    expect(screen.getByText('Single Player')).toBeInTheDocument();
+    expect(screen.queryByText('โหมดการเล่น')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Single Player/i)).not.toBeInTheDocument();
   });
 
   it('changes card removal count through the visible option and sends the expected config payload', async () => {
@@ -134,6 +136,67 @@ describe('SetupScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'เริ่มพิธีกรรม' }));
 
     expect(onStartGame).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens and closes the daily mission modal from the daily mission action', async () => {
+    await renderSetupScreen({
+      dailyQuest: {
+        title: 'ชนะเกม 3 ครั้ง',
+        progress: 2,
+        target: 3,
+        claimed: false,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /ภารกิจประจำวัน/ }));
+
+    const dialog = screen.getByRole('dialog', { name: 'ภารกิจประจำวัน' });
+
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText('ความคืบหน้า')).toBeInTheDocument();
+    expect(within(dialog).getByText('2 / 3')).toBeInTheDocument();
+    expect(within(dialog).getByText('รางวัล')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'ปิดภารกิจประจำวัน' }));
+
+    expect(screen.queryByRole('dialog', { name: 'ภารกิจประจำวัน' })).not.toBeInTheDocument();
+  });
+
+  it('scrolls smoothly from the guide button to the guide section', async () => {
+    const scrollTo = vi.fn();
+    const originalScrollTo = window.scrollTo;
+    window.scrollTo = scrollTo;
+
+    try {
+      await renderSetupScreen();
+
+      fireEvent.click(screen.getByRole('button', { name: 'คู่มือการเล่น' }));
+
+      expect(screen.getByRole('heading', { name: 'คู่มือการเล่น' })).toBeInTheDocument();
+      expect(scrollTo).toHaveBeenCalledWith({ top: expect.any(Number), behavior: 'smooth' });
+    } finally {
+      window.scrollTo = originalScrollTo;
+    }
+  });
+
+  it('renders the Joker guide card from the real img/joker.png asset', async () => {
+    await renderSetupScreen();
+
+    const joker = screen.getByRole('img', { name: 'ไพ่ Joker' });
+
+    expect(joker).toHaveAttribute('src', '/img/joker.png');
+  });
+
+  it('uses the same red active icon color for every difficulty option', async () => {
+    const { rerender, props, SetupScreen } = await renderSetupScreen({ aiDifficulty: 'easy' });
+
+    expect(screen.getByRole('button', { name: 'ง่าย' }).querySelector('svg')).toHaveStyle({ color: '#ff4d4d' });
+
+    rerender(<SetupScreen {...props} aiDifficulty="medium" />);
+    expect(screen.getByRole('button', { name: 'ปานกลาง' }).querySelector('svg')).toHaveStyle({ color: '#ff4d4d' });
+
+    rerender(<SetupScreen {...props} aiDifficulty="hard" />);
+    expect(screen.getByRole('button', { name: 'อันตราย' }).querySelector('svg')).toHaveStyle({ color: '#ff4d4d' });
   });
 
   it('keeps reusable lobby-panel surfaces in the right control stack', async () => {

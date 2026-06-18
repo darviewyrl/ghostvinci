@@ -1,6 +1,7 @@
 import React from 'react';
 import logoRedImage from '../../../img/logo_red.png';
 import LobbyControlPanel from './LobbyControlPanel';
+import LobbyGuideSection from './LobbyGuideSection';
 import LobbyScene from './LobbyScene';
 
 export default function LobbyShell({
@@ -19,9 +20,10 @@ export default function LobbyShell({
   return (
     <div
       data-testid="lobby-shell"
-      className="lobby-shell-bg relative h-screen min-h-screen overflow-x-hidden overflow-y-auto font-thai select-none"
+      className="lobby-shell-bg relative min-h-screen overflow-x-hidden font-thai select-none"
     >
-      <div className="pointer-events-none absolute left-5 top-5 z-10 w-[21.5rem] sm:left-6 sm:top-6 sm:w-[25rem] xl:w-[26.5rem]">
+      <div aria-hidden="true" className="lobby-shell-hero-bg absolute inset-x-0 top-0 h-screen" />
+      <div className="lobby-corner-logo pointer-events-none absolute z-10">
         <img
           src={logoRedImage}
           alt="Ghostvinci"
@@ -29,7 +31,7 @@ export default function LobbyShell({
           draggable="false"
         />
       </div>
-      <main className="relative z-10 grid min-h-screen w-full gap-6 px-5 py-5 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(292px,29vw)] lg:items-center lg:gap-8 lg:px-7 lg:py-9 lg:pr-14 xl:grid-cols-[minmax(0,1fr)_372px] xl:gap-10 xl:pl-10 xl:pr-20">
+      <main id="ritual-lobby" className="relative z-10 grid min-h-screen w-full gap-6 px-5 py-5 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(292px,29vw)] lg:items-center lg:gap-8 lg:px-7 lg:py-9 lg:pr-12 xl:grid-cols-[minmax(0,1fr)_372px] xl:gap-8 xl:pl-10 xl:pr-18">
         <LobbyScene />
         <LobbyControlPanel
           aiDifficulty={aiDifficulty}
@@ -45,6 +47,7 @@ export default function LobbyShell({
           onOpenSettings={onOpenSettings}
         />
       </main>
+      <LobbyGuideSection />
     </div>
   );
 }
